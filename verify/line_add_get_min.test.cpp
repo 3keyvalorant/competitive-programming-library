@@ -1,0 +1,2 @@
+#include "../library/data_structure/li_chao_tree.hpp"
+struct Query{int type;long long a,b;};int main(){ios::sync_with_stdio(false);cin.tie(nullptr);int n,q;cin>>n>>q;vector<LiChaoTree<>::Line>initial(n);for(auto&l:initial)cin>>l.a>>l.b;vector<Query>queries(q);vector<long long>xs;for(auto&query:queries){cin>>query.type>>query.a;if(!query.type)cin>>query.b;else xs.push_back(query.a);}if(xs.empty())return 0;LiChaoTree<>tree(xs);for(auto l:initial)tree.add_line(l);for(auto query:queries)if(!query.type)tree.add_line({query.a,query.b});else cout<<tree.query(query.a)<<'\n';}

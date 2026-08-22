@@ -1,0 +1,54 @@
+#include "../library/all.hpp"
+
+long long sum_op(long long a,long long b){return a+b;} long long sum_e(){return 0;}
+int min_op(int a,int b){return min(a,b);}
+struct Node{long long sum;int len;};Node node_op(Node a,Node b){return{a.sum+b.sum,a.len+b.len};}Node node_e(){return{0,0};}Node add_map(long long f,Node s){return{s.sum+f*s.len,s.len};}long long add_comp(long long f,long long g){return f+g;}long long add_id(){return 0;}
+struct RDP{long long sum,size;};RDP rmerge(RDP a,RDP b){return{a.sum+b.sum,a.size+b.size};}RDP re(){return{0,0};}RDP redge(RDP a,long long w){a.sum+=a.size*w;return a;}RDP rvertex(RDP a,int){++a.size;return a;}
+
+bool has_simple_cycle_brute(const vector<vector<int>>&g,int parity){
+    int n=g.size();for(int s=0;s<n;++s){vector<char>used(n);used[s]=1;auto dfs=[&](auto&&self,int v,int len)->bool{for(int to:g[v]){if(to==s&&len>=2&&(len+1)%2==parity)return true;if(!used[to]&&to>=s){used[to]=1;if(self(self,to,len+1))return true;used[to]=0;}}return false;};if(dfs(dfs,s,0))return true;}return false;
+}
+
+int main(){
+    mt19937 rng(712367);
+    for(int n=1;n<=30;++n){
+        vector<long long>a(n);for(auto&x:a)x=(int)(rng()%21)-10;FenwickTree<long long>fw(a);segtree<long long,sum_op,sum_e>sg(a);
+        for(int q=0;q<100;++q){int l=rng()%n,r=rng()%n;if(l>r)swap(l,r);++r;long long want=accumulate(a.begin()+l,a.begin()+r,0LL);assert(fw.sum(l,r)==want&&sg.prod(l,r)==want);int i=rng()%n,d=(int)(rng()%11)-5;a[i]+=d;fw.add(i,d);sg.set(i,a[i]);}
+    }
+    for(int n=1;n<=50;++n){vector<int>a(n);for(int&x:a)x=rng()%1000;SparseTable<int,min_op>st(a);for(int l=0;l<n;++l)for(int r=l+1;r<=n;++r)assert(st.prod(l,r)==*min_element(a.begin()+l,a.begin()+r));}
+    {vector<Node>a(20,{0,1});lazy_segtree<Node,node_op,node_e,long long,add_map,add_comp,add_id>sg(a);sg.apply(2,10,3);sg.apply(5,15,2);assert(sg.prod(0,20).sum==44&&sg.get(6).sum==5);}
+    UnionFind uf(6);assert(uf.merge(0,1)&&uf.marge(1,2)&&uf.same(0,2)&&uf.size(1)==3);WeightedUnionFind<long long>wuf(4);assert(wuf.merge(0,1,3)&&wuf.merge(1,2,-2)&&wuf.difference(0,2)==1);
+    assert(mint(-1).val()==998244352&&mint(2).pow(10)==mint(1024));combination<mint>co(20);assert(co.C(5,2)==mint(10)&&co.P(5,2)==mint(20));long long egx,egy;assert(extgcd(30,18,egx,egy)==6&&30*egx+18*egy==6);assert((crt({2,3},{3,5})==pair<long long,long long>(8,15)));assert(integer_sqrt(LLONG_MAX)==3037000499LL);
+    for(int n=1;n<=8;++n)for(int tc=0;tc<300;++tc){
+        vector<vector<int>>g(n);for(int i=0;i<n;++i)for(int j=i+1;j<n;++j)if(rng()%4==0)g[i].push_back(j),g[j].push_back(i);
+        assert(has_odd_cycle_undirected(g)==has_simple_cycle_brute(g,1));
+        assert(has_even_cycle_undirected(g)==has_simple_cycle_brute(g,0));
+        auto c=find_shortest_cycle_undirected(g);assert(c.empty()==(!has_simple_cycle_brute(g,0)&&!has_simple_cycle_brute(g,1)));
+    }
+    for(int n=1;n<=8;++n)for(int tc=0;tc<100;++tc){
+        TwoSAT sat(n);vector<array<int,4>>clauses;for(int q=0;q<20;++q){int i=rng()%n,j=rng()%n;bool f=rng()%2,g=rng()%2;sat.add_clause(i,f,j,g);clauses.push_back({i,f,j,g});}
+        bool brute=false;for(int mask=0;mask<(1<<n);++mask){bool ok=true;for(auto c:clauses)ok&=(((mask>>c[0]&1)==c[1])||((mask>>c[2]&1)==c[3]));brute|=ok;}assert(sat.satisfiable()==brute);if(brute){auto a=sat.answer();for(auto c:clauses)assert(a[c[0]]==c[1]||a[c[2]]==c[3]);}
+    }
+    for(int n=1;n<=100;++n){vector<int>to(n);for(int&next:to)next=rng()%n;FunctionalGraph fg(to);for(int v=0;v<n;++v){int cur=v;for(int k=0;k<200;++k){assert(fg.jump(v,k)==cur);cur=to[cur];}assert(fg.dist_to_cycle(v)>=0&&fg.cycle_size(v)>0);}}
+    for(int n=1;n<=100;++n){string s;for(int i=0;i<n;++i)s+=char('a'+rng()%3);auto z=z_algorithm(s);for(int i=0;i<n;++i){int k=0;while(i+k<n&&s[k]==s[i+k])++k;assert(z[i]==k);}auto d=manacher_odd(s);for(int i=0;i<n;++i){int k=0;while(i-k>=0&&i+k<n&&s[i-k]==s[i+k])++k;assert(d[i]==k);}}
+    BinaryLifting<long long>bl(6);bl.add_edge(0,1,2);bl.add_edge(1,2,3);bl.add_edge(1,3,4);bl.add_edge(0,4,5);bl.add_edge(4,5,6);bl.build();assert(bl.lca(2,3)==1&&bl.dist(2,5)==16&&bl.jump(2,2)==0);
+    {Dijkstra<long long>d(4);d.make_directedgraph(0,1,5);d.make_directedgraph(0,2,1);d.make_directedgraph(2,1,2);d.make_directedgraph(1,3,4);d.do_dijkstra(0);assert(d.output(3)==7&&d.path(3)==vector<int>({0,2,1,3}));auto bf=bellman_ford<long long>(3,{{0,1,1},{1,2,-3},{2,1,1}},0);assert(bf.negative[1]&&bf.negative[2]);}
+    {auto mst=kruskal<long long>(4,{{0,1,4},{0,2,1},{1,2,2},{1,3,1},{2,3,5}});assert(mst.connected&&mst.cost==4);Dinic<long long>flow(4);flow.add_edge(0,1,2);flow.add_edge(0,2,1);flow.add_edge(1,2,1);flow.add_edge(1,3,1);flow.add_edge(2,3,2);assert(flow.flow(0,3)==3);}
+    {EulerTour et(4);et.addVCost(0,1);et.addVCost(1,2);et.addVCost(2,3);et.addVCost(3,4);et.addEdge(0,1,5);et.addEdge(1,2,6);et.addEdge(1,3,7);et.build();assert(et.distV(2,3)==9&&et.distE(2,3)==13&&et.partV(1)==9&&et.partE(1)==13);et.changeECost(1,3,10);assert(et.distE(2,3)==16&&et.partE(1)==16);}
+    assert(lis_length(vector<int>{3,1,4,1,5,9,2,6})==4);RollingHash rh(string("abracadabra"));assert(rh.get(0,4)==rh.get(7,11));assert(kmp_search(string("aaaaa"),string("aa"))==vector<int>({0,1,2,3}));
+    for(int n=2;n<=40;++n){
+        HeavyLightDecomposition hld(n);Rerooting<RDP,long long,rmerge,re,redge,rvertex>rr(n);vector<vector<pair<int,int>>>tree(n);
+        for(int v=1;v<n;++v){int p=rng()%v,w=rng()%10+1;hld.add_edge(p,v);rr.add_edge(p,v,w);tree[p].push_back({v,w});tree[v].push_back({p,w});}hld.build();auto ans=rr.build();
+        vector<long long>ordered(n);for(int v=0;v<n;++v)ordered[hld.in[v]]=v+1;
+        for(int s=0;s<n;++s){vector<long long>d(n,-1);d[s]=0;queue<int>q;q.push(s);while(!q.empty()){int v=q.front();q.pop();for(auto[to,w]:tree[v])if(d[to]<0)d[to]=d[v]+w,q.push(to);}assert(ans[s].sum==accumulate(all(d),0LL));for(int t=0;t<n;++t){int w=hld.lca(s,t),len=0;long long want=w+1,got=0;for(int v=t;v!=w;v=hld.parent[v])++len,want+=v+1;for(int v=s;v!=w;v=hld.parent[v])++len,want+=v+1;hld.for_each_path(s,t,[&](int l,int r){got+=accumulate(ordered.begin()+l,ordered.begin()+r,0LL);});assert(hld.dist(s,t)==len&&got==want);}}
+    }
+    {LowLink llg(6);llg.add_edge(0,1);llg.add_edge(1,2);llg.add_edge(2,0);llg.add_edge(1,3);llg.add_edge(3,4);llg.add_edge(3,4);llg.add_edge(4,5);llg.build();assert(llg.articulation_points()==vector<int>({1,3,4}));assert((llg.bridge_edges()==vector<pair<int,int>>({{1,3},{4,5}})));}
+    for(int n=2;n<=9;++n)for(int tc=0;tc<200;++tc){LowLink low(n);vector<pair<int,int>>es;for(int v=1;v<n;++v){int p=rng()%v;es.push_back({p,v});low.add_edge(p,v);}for(int q=0;q<n;++q)if(rng()%2){int u=rng()%n,v=rng()%n;if(u!=v)es.push_back({u,v}),low.add_edge(u,v);}low.build();auto components=[&](int banned_v,int banned_edge){vector<char>seen(n);int c=0;for(int s=0;s<n;++s)if(s!=banned_v&&!seen[s]){++c;queue<int>q;q.push(s);seen[s]=1;while(!q.empty()){int v=q.front();q.pop();for(int i=0;i<(int)es.size();++i)if(i!=banned_edge){auto[a,b]=es[i];int to=a==v?b:b==v?a:-1;if(to>=0&&to!=banned_v&&!seen[to])seen[to]=1,q.push(to);}}}return c;};vector<int>arts;for(int v=0;v<n;++v)if(components(v,-1)>1)arts.push_back(v);vector<int>bridges;for(int i=0;i<(int)es.size();++i)if(components(-1,i)>1)bridges.push_back(i);assert(low.articulation_points()==arts&&low.bridges==bridges);}
+    {MinCostFlow<int,long long>mcf(4);mcf.add_edge(0,1,2,1);mcf.add_edge(0,2,2,0);mcf.add_edge(2,1,1,-1);mcf.add_edge(1,3,2,1);mcf.add_edge(2,3,1,5);assert((mcf.flow(0,3,3)==pair<int,long long>(3,7)));}
+    for(int tc=0;tc<100;++tc){BinaryTrie<unsigned,10>bt;multiset<unsigned>ms;for(int q=0;q<200;++q){if(ms.empty()||rng()%3){unsigned v=rng()%1024;bt.insert(v);ms.insert(v);}else{auto it=next(ms.begin(),rng()%ms.size());unsigned v=*it;bt.erase(v);ms.erase(it);}assert(bt.size()==(int)ms.size());if(!ms.empty()){unsigned mask=rng()%1024;vector<unsigned>v(all(ms));sort(all(v),[&](auto a,auto b){return (a^mask)<(b^mask);});int k=rng()%v.size();assert(bt.kth_element(k,mask)==v[k]);unsigned x=rng()%1024;assert(bt.count_less(x,mask)==count_if(all(v),[&](auto y){return (y^mask)<x;}));}}}
+    {vector<long long>xs;for(int xx=-20;xx<=20;++xx)xs.push_back(xx);LiChaoTree<>lc(xs);vector<LiChaoTree<>::Line>lines;for(int q=0;q<100;++q){LiChaoTree<>::Line line{(int)(rng()%21)-10,(int)(rng()%41)-20};lines.push_back(line);lc.add_line(line);for(long long xx:xs){long long want=LLONG_MAX;for(auto l:lines)chmin(want,(long long)l.eval(xx));assert(lc.query(xx)==want);}}}
+    for(int n=0;n<=50;++n){string s;for(int i=0;i<n;++i)s+=char('a'+rng()%4);auto sa=suffix_array(s);auto brute=sa;sort(all(brute),[&](int a,int b){return s.substr(a)<s.substr(b);});assert(sa==brute);auto lcp=lcp_array(s,sa);for(int i=0;i+1<n;++i){int k=0;while(sa[i]+k<n&&sa[i+1]+k<n&&s[sa[i]+k]==s[sa[i+1]+k])++k;assert(lcp[i]==k);}if(n){int p=rng()%n,len=rng()%(n-p)+1;string pattern=s.substr(p,len);auto[l,r]=suffix_array_equal_range(s,sa,pattern);int count=0;for(int pos:sa)count+=s.compare(pos,pattern.size(),pattern)==0;assert(r-l==count);for(int i=l;i<r;++i)assert(s.compare(sa[i],pattern.size(),pattern)==0);}}
+    {vector<int>a(100);for(int&v:a)v=rng()%15;Mo mo(a.size());vector<pair<int,int>>qs;for(int q=0;q<200;++q){int l=rng()%101,r=rng()%101;if(l>r)swap(l,r);mo.add_query(l,r);qs.push_back({l,r});}vector<int>freq(15),got(qs.size());int l=0,r=0,distinct=0;for(int id:mo.order()){auto[ql,qr]=qs[id];while(l>ql){--l;if(!freq[a[l]]++)++distinct;}while(r<qr){if(!freq[a[r]]++)++distinct;++r;}while(l<ql){if(!--freq[a[l]])--distinct;++l;}while(r>qr){--r;if(!--freq[a[r]])--distinct;}got[id]=distinct;}for(int i=0;i<(int)qs.size();++i){set<int>s(a.begin()+qs[i].first,a.begin()+qs[i].second);assert(got[i]==(int)s.size());}}
+    {int n=200000;HeavyLightDecomposition hld(n);LowLink low(n);for(int v=1;v<n;++v)hld.add_edge(v-1,v),low.add_edge(v-1,v);hld.build();low.build();assert(hld.lca(n-1,n/2)==n/2&&(int)low.bridges.size()==n-1&&(int)low.articulation_points().size()==n-2);}
+    cout<<"random tests passed\n";
+}
