@@ -10,7 +10,7 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 |---|---|---|---|---|
 | Basic | helpers / compression | `library/basic/base.hpp` | compression `O(N log N)` | local |
 | Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
-| Math | ModInt / Combination | `library/math/` | pow `O(log N)`, combination build `O(N)`, query `O(1)` | local |
+| Math | ModInt / adaptive Combination | `library/math/` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r))` per base-`MOD` digit | local random |
 | Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
 | Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
 | Data structure | Binary Trie | `library/data_structure/binary_trie.hpp` | operation `O(B)` | local random |
@@ -55,6 +55,7 @@ GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/ran
 
 ## 注意
 
+- `combination<T>(N)` は `N <= 2,000,000` なら階乗表を構築し、それより大きければ巨大配列を確保せず乗算式へ切り替えます。`N >= MOD` の `C` はLucasの定理を使うため、`MOD` は素数を想定します。
 - Rolling hash は法 `2^61-1` の単一ハッシュで、衝突確率は低いもののゼロではありません。
 - cycle API は返す頂点列の末尾に始点を重複させません。現在の隣接リストAPIは平行辺のedge idを保持しません。
 - Min-Cost Flow は到達可能な負閉路がないことを前提とします。Li Chao Treeの問い合わせ座標は構築時に渡してください。

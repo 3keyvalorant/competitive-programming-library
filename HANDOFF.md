@@ -22,6 +22,7 @@
 
 - Heuristic utilities, Timer, and XorShift from the original monolithic file are intentionally excluded.
 - `unionfind<T>` remains as a compatibility alias and `marge` remains as an alias of `merge`.
+- `combination<T>` now selects factorial-table or multiplicative/Lucas mode from its initialization value. Public `C/P/get/calu` arguments were widened from `int` to `long long` without breaking ordinary calls.
 - Cycle functions accept adjacency lists and return a vertex sequence without repeating the first vertex.
 - Parallel-edge identity is not represented by `vector<vector<int>>`; edge-specific multigraph work should use an edge-id graph in a future extension.
 
