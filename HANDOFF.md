@@ -7,7 +7,10 @@
 - Union-Find, weighted Union-Find, Fenwick tree, segment trees, sparse table
 - Graph traversal, shortest paths, SCC, 2-SAT, MST, max flow, cycle utilities
 - Binary lifting, Euler tour, functional graph
+- Heavy-Light Decomposition, rerooting, LowLink
+- Min-Cost Flow, Binary Trie, Li Chao Tree, Mo's algorithm
 - Rolling hash, Z algorithm, KMP, Manacher, LIS, run-length encoding
+- Suffix Array and LCP array
 
 ## Verification status
 
@@ -24,12 +27,11 @@
 
 ## Library Checker status
 
-- Adapters exist for union-find, point-add/range-sum, static range sum/RMQ, shortest path, SCC, 2-SAT, and Z algorithm.
+- Adapters exist for union-find, point-add/range-sum, static range sum/RMQ, shortest path, SCC, 2-SAT, Z algorithm, suffix array, vertex-add/path-sum, and line-add/get-min.
 - Status: locally compile-tested, not online-judge verified.
 
 ## Next candidates
 
-- Heavy-Light Decomposition, rerooting DP, min-cost flow, suffix array
+- NTT/convolution, rollback Union-Find, biconnected components, Wavelet Matrix
 - Online Library Checker submissions and badges
 - Edge-id based cycle API for multigraph-specific queries
-

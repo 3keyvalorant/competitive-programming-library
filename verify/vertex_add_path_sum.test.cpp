@@ -1,0 +1,3 @@
+#include "../library/tree/heavy_light_decomposition.hpp"
+#include "../library/data_structure/fenwick_tree.hpp"
+int main(){ios::sync_with_stdio(false);cin.tie(nullptr);int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;HeavyLightDecomposition hld(n);for(int i=1,u,v;i<n;++i){cin>>u>>v;hld.add_edge(u,v);}hld.build();vector<long long>b(n);for(int v=0;v<n;++v)b[hld.in[v]]=a[v];FenwickTree<long long>fw(b);while(q--){int t;cin>>t;if(!t){int p;long long x;cin>>p>>x;fw.add(hld.in[p],x);}else{int u,v;cin>>u>>v;long long ans=0;hld.for_each_path(u,v,[&](int l,int r){ans+=fw.sum(l,r);});cout<<ans<<'\n';}}}

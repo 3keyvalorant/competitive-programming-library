@@ -13,17 +13,24 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Math | ModInt / Combination | `library/math/` | pow `O(log N)`, combination build `O(N)`, query `O(1)` | local |
 | Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
 | Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
+| Data structure | Binary Trie | `library/data_structure/binary_trie.hpp` | operation `O(B)` | local random |
 | Data structure | Fenwick tree | `library/data_structure/fenwick_tree.hpp` | build `O(N)`, query/update `O(log N)` | local, adapter |
 | Data structure | Segment tree / Lazy segment tree | `library/data_structure/*segtree.hpp` | build `O(N)`, query/update `O(log N)` | local |
 | Data structure | Sparse table | `library/data_structure/sparse_table.hpp` | build `O(N log N)`, query `O(1)` | local, adapter |
+| Data structure | Li Chao Tree | `library/data_structure/li_chao_tree.hpp` | add/query `O(log N)` | local random, adapter |
 | Graph | BFS / 01-BFS / Dijkstra / Bellman-Ford / Floyd-Warshall / topo sort | `library/graph/shortest_path.hpp` | standard bounds | local, adapter |
 | Graph | SCC / 2-SAT | `library/graph/scc.hpp`, `two_sat.hpp` | `O(N+M)` | local, adapter |
 | Graph | Kruskal / Dinic | `library/graph/mst.hpp`, `dinic.hpp` | `O(M log M)`, `O(V^2E)` | local |
+| Graph | Min-Cost Flow | `library/graph/min_cost_flow.hpp` | initial `O(VE)`, then `O(F E log V)` | local |
+| Graph | LowLink | `library/graph/lowlink.hpp` | `O(N+M)` | local |
 | Graph | cycle recovery | `library/graph/cycle.hpp` | ordinary/odd `O(N+M)`; shortest/even `O(M(N+M))` | local random |
 | Tree | Binary lifting / Euler tour | `library/tree/` | build `O(N log N)`, LCA `O(log N)` | local |
+| Tree | HLD / Rerooting | `library/tree/heavy_light_decomposition.hpp`, `rerooting.hpp` | build `O(N)`, path `O(log N)` segments | local random, HLD adapter |
 | Graph | Functional graph | `library/algorithm/functional_graph.hpp` | build `O(N log K)`, jump `O(log K)` | local random |
 | String | Rolling hash / Z / KMP / Manacher | `library/string/` | build/search `O(N)` | local, Z adapter |
+| String | Suffix Array / LCP | `library/string/suffix_array.hpp` | `O(N log^2 N)` / `O(N)` | local random, adapter |
 | Algorithm | LIS / run-length encoding | `library/algorithm/` | `O(N log N)` / `O(N)` | local |
+| Algorithm | Mo's algorithm query ordering | `library/algorithm/mo.hpp` | typical `O((N+Q)sqrt(N))` moves | local random |
 
 ## 最小使用例
 
@@ -50,6 +57,6 @@ GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/ran
 
 - Rolling hash は法 `2^61-1` の単一ハッシュで、衝突確率は低いもののゼロではありません。
 - cycle API は返す頂点列の末尾に始点を重複させません。現在の隣接リストAPIは平行辺のedge idを保持しません。
+- Min-Cost Flow は到達可能な負閉路がないことを前提とします。Li Chao Treeの問い合わせ座標は構築時に渡してください。
 - 一般グラフの「長さK以上の単純サイクル」は困難なため、見逃し得るヒューリスティック版は収録していません。
 - Timer、XorShift、焼きなまし等のAHC専用品は対象外です。
-

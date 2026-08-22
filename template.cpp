@@ -153,6 +153,32 @@ template<class T> struct WeightedUnionFind {
 };
 
 
+template<class UInt = unsigned long long, int B = numeric_limits<UInt>::digits> struct BinaryTrie {
+    static_assert(is_unsigned<UInt>::value, "BinaryTrie requires an unsigned integer type");
+    struct Node { int next[2] = {-1,-1}; int count = 0; };
+    vector<Node> nodes{Node{}};
+    int size() const { return nodes[0].count; }
+    int count(UInt x) const { int v = 0; for (int b = B - 1; b >= 0; --b){ v = nodes[v].next[x >> b & 1]; if (v < 0) return 0; } return nodes[v].count; }
+    void insert(UInt x, int delta = 1){
+        assert(delta > 0); int v = 0; nodes[v].count += delta;
+        for (int b = B - 1; b >= 0; --b){ int c = x >> b & 1; if (nodes[v].next[c] < 0) nodes[v].next[c] = nodes.size(), nodes.push_back(Node{}); v = nodes[v].next[c]; nodes[v].count += delta; }
+    }
+    void erase(UInt x, int delta = 1){ assert(count(x) >= delta); int v = 0; nodes[v].count -= delta; for (int b = B - 1; b >= 0; --b){ v = nodes[v].next[x >> b & 1]; nodes[v].count -= delta; } }
+    UInt kth_element(int k, UInt xor_mask = 0) const {
+        assert(0 <= k && k < size()); int v = 0; UInt value = 0;
+        for (int b = B - 1; b >= 0; --b){ int preferred = xor_mask >> b & 1, left = nodes[v].next[preferred], cnt = left < 0 ? 0 : nodes[left].count; int c = preferred; if (k >= cnt) k -= cnt, c ^= 1; v = nodes[v].next[c]; value |= UInt(c) << b; }
+        return value;
+    }
+    UInt min_xor(UInt x) const { assert(size()); return kth_element(0, x) ^ x; }
+    UInt max_xor(UInt x) const { assert(size()); return kth_element(size() - 1, x) ^ x; }
+    int count_less(UInt x, UInt xor_mask = 0) const {
+        int v = 0, res = 0;
+        for (int b = B - 1; b >= 0 && v >= 0; --b){ int mb = xor_mask >> b & 1, xb = x >> b & 1; if (xb){ int z = nodes[v].next[mb]; if (z >= 0) res += nodes[z].count; } v = nodes[v].next[mb ^ xb]; }
+        return res;
+    }
+};
+
+
 template<class T> struct FenwickTree {
     int n = 0; vector<T> bit;
     FenwickTree(int m = 0){ reset(m); }
@@ -163,6 +189,29 @@ template<class T> struct FenwickTree {
     T sum(int l, int r) const { return sum(r) - sum(l); }
     T get(int i) const { return sum(i, i + 1); }
     int lower_bound(T x) const { if (x <= T{}) return 0; int k = 1, i = 0; T s{}; while ((k << 1) <= n) k <<= 1; for (; k; k >>= 1) if (i + k <= n && s + bit[i + k] < x) s += bit[i += k]; return min(i, n); }
+};
+
+template<bool Minimum = true> struct LiChaoTree {
+    struct Line { long long a = 0, b = 0; __int128 eval(long long x) const { return (__int128)a * x + b; } };
+    vector<long long> xs; vector<Line> seg; vector<char> used;
+    LiChaoTree(vector<long long> x) : xs(move(x)) { sort(all(xs)); xs.erase(unique(all(xs)), xs.end()); seg.resize(xs.size() * 4 + 4); used.assign(seg.size(), false); }
+    bool better(__int128 a, __int128 b) const { return Minimum ? a < b : a > b; }
+    void add_line(Line line){ assert(!xs.empty()); add_line(line, 1, 0, xs.size()); }
+    void add_segment(Line line, long long xl, long long xr){ int l = lower_bound(all(xs), xl) - xs.begin(), r = lower_bound(all(xs), xr) - xs.begin(); add_segment(line, l, r, 1, 0, xs.size()); }
+    long long query(long long x) const {
+        int p = lower_bound(all(xs), x) - xs.begin(); assert(p < (int)xs.size() && xs[p] == x); __int128 ans = Minimum ? (__int128)LLONG_MAX : (__int128)LLONG_MIN;
+        for (int k = 1, l = 0, r = xs.size();;){ if (used[k] && better(seg[k].eval(x), ans)) ans = seg[k].eval(x); if (r - l == 1) break; int m = (l + r) / 2; if (p < m) k *= 2, r = m; else k = k * 2 + 1, l = m; }
+        return (long long)ans;
+    }
+private:
+    void add_line(Line line, int k, int l, int r){
+        if (!used[k]){ seg[k] = line; used[k] = true; return; }
+        int m = (l + r) / 2; bool left = better(line.eval(xs[l]), seg[k].eval(xs[l])), mid = better(line.eval(xs[m]), seg[k].eval(xs[m]));
+        if (mid) swap(line, seg[k]);
+        if (r - l == 1) return;
+        if (left != mid) add_line(line, k * 2, l, m); else add_line(line, k * 2 + 1, m, r);
+    }
+    void add_segment(Line line, int ql, int qr, int k, int l, int r){ if (qr <= l || r <= ql) return; if (ql <= l && r <= qr){ add_line(line, k, l, r); return; } int m = (l + r) / 2; add_segment(line, ql, qr, k * 2, l, m); add_segment(line, ql, qr, k * 2 + 1, m, r); }
 };
 
 template<class S, S (*op)(S, S), S (*e)()> struct segtree {
@@ -318,6 +367,62 @@ template<class T> struct Dinic {
     T flow(int s,int t,T limit=numeric_limits<T>::max()){T res{};while(res<limit&&bfs_level(s,t)){fill(all(it),0);while(T f=dfs(s,t,limit-res))res+=f;}return res;}
 };
 
+template<class Cap, class Cost> struct MinCostFlow {
+    struct Edge { int to, rev; Cap cap; Cost cost; };
+    int n; vector<vector<Edge>> g;
+    MinCostFlow(int m = 0) : n(m), g(m) {}
+    void add_edge(int u, int v, Cap cap, Cost cost){ int a = g[u].size(), b = g[v].size(); g[u].push_back({v,b,cap,cost}); g[v].push_back({u,a,Cap{},-cost}); }
+    pair<Cap,Cost> flow(int s, int t, Cap limit = numeric_limits<Cap>::max()){
+        const Cost inf = numeric_limits<Cost>::max() / 4; vector<Cost> h(n, inf); h[s] = 0;
+        for (int it = 0; it < n; ++it){ bool changed = false; for (int v = 0; v < n; ++v) if (h[v] != inf) for (auto& e : g[v]) if (e.cap > 0 && h[e.to] > h[v] + e.cost) h[e.to] = h[v] + e.cost, changed = true; if (!changed) break; }
+        for (Cost& x : h) if (x == inf) x = 0;
+        Cap sent{}; Cost total{}; vector<Cost> dist(n); vector<int> pv(n), pe(n);
+        while (sent < limit){
+            fill(all(dist), inf); dist[s] = 0; minpq<pair<Cost,int>> q; q.push({0,s});
+            while (!q.empty()){
+                auto [d,v] = q.top(); q.pop(); if (d != dist[v]) continue;
+                for (int i = 0; i < (int)g[v].size(); ++i){ auto& e = g[v][i]; Cost nd = d + e.cost + h[v] - h[e.to]; if (e.cap > 0 && chmin(dist[e.to], nd)) pv[e.to] = v, pe[e.to] = i, q.push({nd,e.to}); }
+            }
+            if (dist[t] == inf) break;
+            for (int v = 0; v < n; ++v) if (dist[v] != inf) h[v] += dist[v];
+            Cap add = limit - sent; for (int v = t; v != s; v = pv[v]) chmin(add, g[pv[v]][pe[v]].cap);
+            sent += add; total += (Cost)add * h[t];
+            for (int v = t; v != s; v = pv[v]){ Edge& e = g[pv[v]][pe[v]]; e.cap -= add; g[v][e.rev].cap += add; }
+        }
+        return {sent,total};
+    }
+};
+
+struct LowLink {
+    int n, timer = 0; vector<pair<int,int>> edges; vector<vector<pair<int,int>>> g;
+    vector<int> ord, low, parent; vector<char> articulation; vector<int> bridges;
+    LowLink(int m = 0) : n(m), g(m) {}
+    int add_edge(int u, int v){ int id = edges.size(); edges.push_back({u,v}); g[u].push_back({v,id}); g[v].push_back({u,id}); return id; }
+    void build(){
+        ord.assign(n, -1); low.resize(n); parent.assign(n, -1); articulation.assign(n, false); bridges.clear(); timer = 0;
+        vector<int> parent_edge(n, -1), children(n);
+        for (int root = 0; root < n; ++root) if (ord[root] < 0){
+            ord[root] = low[root] = timer++;
+            vector<pair<int,int>> st{{root,0}};
+            while (!st.empty()){
+                int v = st.back().first; int& i = st.back().second;
+                if (i < (int)g[v].size()){
+                    auto [to,id] = g[v][i++]; if (id == parent_edge[v]) continue;
+                    if (ord[to] < 0){ parent[to] = v; parent_edge[to] = id; ++children[v]; ord[to] = low[to] = timer++; st.push_back({to,0}); }
+                    else low[v] = min(low[v], ord[to]);
+                } else {
+                    st.pop_back();
+                    if (parent[v] >= 0){ int p = parent[v]; low[p] = min(low[p], low[v]); if (low[v] > ord[p]) bridges.push_back(parent_edge[v]); if (parent[p] >= 0 && low[v] >= ord[p]) articulation[p] = true; }
+                }
+            }
+            articulation[root] = children[root] >= 2;
+        }
+        sort(all(bridges));
+    }
+    vector<int> articulation_points() const { vector<int> res; for (int v = 0; v < n; ++v) if (articulation[v]) res.push_back(v); return res; }
+    vector<pair<int,int>> bridge_edges() const { vector<pair<int,int>> res; for (int id : bridges) res.push_back(edges[id]); return res; }
+};
+
 namespace cycle_detail {
 inline vector<int> path(const vector<vector<int>>& g,int s,int t,int banned_vertex=-1,pair<int,int> banned_edge={-1,-1},bool directed=true){
     if(s==banned_vertex||t==banned_vertex)return{};
@@ -378,6 +483,77 @@ template<class T=long long> struct BinaryLifting {
     T dist(int a,int b)const{int c=lca(a,b);return root_dist[a]+root_dist[b]-root_dist[c]-root_dist[c];}
 };
 
+struct HeavyLightDecomposition {
+    int n = 0, timer = 0;
+    vector<vector<int>> g;
+    vector<int> parent, depth, sub, heavy, head, in, rev;
+
+    HeavyLightDecomposition(int m = 0) : n(m), g(m) {}
+    void add_edge(int u, int v){ g[u].push_back(v); g[v].push_back(u); }
+
+    void build(int root = 0){
+        parent.assign(n, -1); depth.assign(n, 0); sub.assign(n, 1); heavy.assign(n, -1);
+        vector<int> order{root}; parent[root] = root;
+        for (int i = 0; i < (int)order.size(); ++i){
+            int v = order[i];
+            for (int to : g[v]) if (to != parent[v]) parent[to] = v, depth[to] = depth[v] + 1, order.push_back(to);
+        }
+        assert((int)order.size() == n);
+        for (int i = n - 1; i > 0; --i){
+            int v = order[i], p = parent[v]; sub[p] += sub[v];
+            if (heavy[p] < 0 || sub[heavy[p]] < sub[v]) heavy[p] = v;
+        }
+        timer = 0; head.assign(n, 0); in.assign(n, 0); rev.assign(n, 0);
+        vector<pair<int,int>> chains{{root, root}};
+        while (!chains.empty()){
+            auto [v, h] = chains.back(); chains.pop_back();
+            for (; v != -1; v = heavy[v]){
+                head[v] = h; in[v] = timer; rev[timer++] = v;
+                for (int to : g[v]) if (to != parent[v] && to != heavy[v]) chains.push_back({to, to});
+            }
+        }
+    }
+    int lca(int u, int v) const {
+        while (head[u] != head[v]){ if (depth[head[u]] < depth[head[v]]) swap(u, v); u = parent[head[u]]; }
+        return depth[u] < depth[v] ? u : v;
+    }
+    int dist(int u, int v) const { int w = lca(u, v); return depth[u] + depth[v] - 2 * depth[w]; }
+    pair<int,int> subtree(int v, bool edge = false) const { return {in[v] + edge, in[v] + sub[v]}; }
+    template<class F> void for_each_path(int u, int v, F f, bool edge = false) const {
+        while (head[u] != head[v]){
+            if (depth[head[u]] < depth[head[v]]) swap(u, v);
+            f(in[head[u]], in[u] + 1); u = parent[head[u]];
+        }
+        if (depth[u] > depth[v]) swap(u, v);
+        if (in[u] + edge < in[v] + 1) f(in[u] + edge, in[v] + 1);
+    }
+};
+
+template<class DP, class Cost, DP (*merge_dp)(DP,DP), DP (*identity_dp)(), DP (*add_edge_dp)(DP,Cost), DP (*add_vertex_dp)(DP,int)>
+struct Rerooting {
+    struct Edge { int to; Cost cost; };
+    int n; vector<vector<Edge>> g; vector<DP> answer;
+    Rerooting(int m = 0) : n(m), g(m) {}
+    void add_edge(int u, int v, Cost cost = Cost{}){ g[u].push_back({v,cost}); g[v].push_back({u,cost}); }
+    const vector<DP>& build(int root = 0){
+        vector<int> parent(n, -1), order{root}; vector<Cost> parent_cost(n);
+        parent[root] = root;
+        for (int i = 0; i < (int)order.size(); ++i) for (auto [to,c] : g[order[i]]) if (parent[to] < 0)
+            parent[to] = order[i], parent_cost[to] = c, order.push_back(to);
+        vector<DP> down(n, identity_dp()), from_parent(n, identity_dp());
+        for (int i = n - 1; i >= 0; --i){ int v = order[i]; DP x = identity_dp(); for (auto [to,c] : g[v]) if (parent[to] == v) x = merge_dp(x, add_edge_dp(down[to], c)); down[v] = add_vertex_dp(x, v); }
+        answer.assign(n, identity_dp());
+        for (int v : order){
+            int m = g[v].size(); vector<DP> pref(m + 1, identity_dp()), suff(m + 1, identity_dp());
+            for (int i = 0; i < m; ++i){ auto [to,c] = g[v][i]; DP x = to == parent[v] ? from_parent[v] : add_edge_dp(down[to], c); pref[i + 1] = merge_dp(pref[i], x); }
+            for (int i = m - 1; i >= 0; --i){ auto [to,c] = g[v][i]; DP x = to == parent[v] ? from_parent[v] : add_edge_dp(down[to], c); suff[i] = merge_dp(x, suff[i + 1]); }
+            answer[v] = add_vertex_dp(pref[m], v);
+            for (int i = 0; i < m; ++i){ auto [to,c] = g[v][i]; if (parent[to] == v) from_parent[to] = add_edge_dp(add_vertex_dp(merge_dp(pref[i], suff[i + 1]), v), c); }
+        }
+        return answer;
+    }
+};
+
 struct EulerTour {
     int n=0,timer=0;vector<vector<pair<int,long long>>>g;vector<int>in,out,parent;vector<long long>vcost,edge_to_parent;FenwickTree<long long>vsub,vpath,esub,epath;BinaryLifting<long long>bl;
     EulerTour(int m=0):n(m),g(m),vcost(m),edge_to_parent(m),bl(m){}
@@ -407,6 +583,18 @@ struct FunctionalGraph {
 
 template<class T> int lis_length(const vector<T>&a,bool strict=true){vector<T>d;for(auto&x:a){auto it=strict?lower_bound(all(d),x):upper_bound(all(d),x);if(it==d.end())d.push_back(x);else*it=x;}return d.size();}
 
+
+struct Mo {
+    struct Query { int l, r, id; };
+    int n; vector<Query> queries;
+    Mo(int m = 0) : n(m) {}
+    int add_query(int l, int r){ assert(0 <= l && l <= r && r <= n); int id = queries.size(); queries.push_back({l,r,id}); return id; }
+    vector<int> order() const {
+        int q = queries.size(), block = max(1, (int)(n / max(1.0, sqrt((double)max(1,q))))); vector<Query> sorted = queries;
+        sort(all(sorted), [&](const Query& a, const Query& b){ int x = a.l / block, y = b.l / block; if (x != y) return x < y; return x & 1 ? a.r > b.r : a.r < b.r; });
+        vector<int> res; res.reserve(q); for (auto query : sorted) res.push_back(query.id); return res;
+    }
+};
 template<class Seq> auto run_length_encoding(const Seq&s){using T=typename Seq::value_type;vector<pair<T,int>>r;for(auto&x:s){if(r.empty()||r.back().first!=x)r.push_back({x,1});else++r.back().second;}return r;}
 
 
@@ -422,6 +610,28 @@ struct RollingHash {
     RollingHash()=default;template<class Seq>RollingHash(const Seq&s){int n=s.size();h.assign(n+1,0);p.assign(n+1,1);for(int i=0;i<n;++i)h[i+1]=add(mul(h[i],base),(unsigned long long)s[i]+1),p[i+1]=mul(p[i],base);}
     ull get(int l,int r)const{ull x=add(h[r],mod-mul(h[l],p[r-l]));return x;}static ull concat(ull left,ull right,int right_len,const RollingHash&rh){return add(mul(left,rh.p[right_len]),right);}
 };
+
+
+inline vector<int> suffix_array(const string& s){
+    int n = s.size(); vector<int> sa(n), rank(n), next_rank(n); iota(all(sa), 0); for (int i = 0; i < n; ++i) rank[i] = (unsigned char)s[i];
+    for (int k = 1; k < n; k <<= 1){
+        sort(all(sa), [&](int i, int j){ if (rank[i] != rank[j]) return rank[i] < rank[j]; int ri = i + k < n ? rank[i + k] : -1, rj = j + k < n ? rank[j + k] : -1; return ri < rj; });
+        next_rank[sa[0]] = 0; for (int i = 1; i < n; ++i){ int a = sa[i-1], b = sa[i]; next_rank[b] = next_rank[a] + (rank[a] != rank[b] || (a+k<n?rank[a+k]:-1) != (b+k<n?rank[b+k]:-1)); } rank.swap(next_rank);
+        if (rank[sa.back()] == n - 1) break;
+    }
+    return sa;
+}
+inline vector<int> lcp_array(const string& s, const vector<int>& sa){
+    int n = s.size(); if (!n) return {}; vector<int> rank(n), lcp(max(0,n-1)); for (int i = 0; i < n; ++i) rank[sa[i]] = i;
+    for (int i = 0, h = 0; i < n; ++i){ int r = rank[i]; if (!r) continue; int j = sa[r-1]; while (i+h<n && j+h<n && s[i+h]==s[j+h]) ++h; lcp[r-1]=h; if(h)--h; }
+    return lcp;
+}
+inline pair<int,int> suffix_array_equal_range(const string& s, const vector<int>& sa, const string& pattern){
+    auto cmp = [&](int pos, const string& p){ return s.compare(pos, p.size(), p); };
+    int l = lower_bound(all(sa), pattern, [&](int pos, const string& p){ return cmp(pos,p) < 0; }) - sa.begin();
+    int r = upper_bound(all(sa), pattern, [&](const string& p, int pos){ return cmp(pos,p) > 0; }) - sa.begin();
+    return {l,r};
+}
 
 int main(){
     std::ios::sync_with_stdio(false);
