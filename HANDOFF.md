@@ -1,0 +1,35 @@
+# HANDOFF
+
+## Implemented
+
+- Basic helpers, prefix sums, coordinate compression, grid helpers
+- ModInt, combinations, number theory
+- Union-Find, weighted Union-Find, Fenwick tree, segment trees, sparse table
+- Graph traversal, shortest paths, SCC, 2-SAT, MST, max flow, cycle utilities
+- Binary lifting, Euler tour, functional graph
+- Rolling hash, Z algorithm, KMP, Manacher, LIS, run-length encoding
+
+## Verification status
+
+- **Locally tested:** all headers compile under GNU++17; `tests/random_test.cpp` covers core structures and graph/string algorithms.
+- **Library Checker adapters:** compile-tested only. They are not described as judge-verified until submitted.
+- **Not yet verified:** all adapters against the online Library Checker judge; exhaustive multigraph cycle recovery beyond local randomized tests.
+
+## Known issues / API changes
+
+- Heuristic utilities, Timer, and XorShift from the original monolithic file are intentionally excluded.
+- `unionfind<T>` remains as a compatibility alias and `marge` remains as an alias of `merge`.
+- Cycle functions accept adjacency lists and return a vertex sequence without repeating the first vertex.
+- Parallel-edge identity is not represented by `vector<vector<int>>`; edge-specific multigraph work should use an edge-id graph in a future extension.
+
+## Library Checker status
+
+- Adapters exist for union-find, point-add/range-sum, static range sum/RMQ, shortest path, SCC, 2-SAT, and Z algorithm.
+- Status: locally compile-tested, not online-judge verified.
+
+## Next candidates
+
+- Heavy-Light Decomposition, rerooting DP, min-cost flow, suffix array
+- Online Library Checker submissions and badges
+- Edge-id based cycle API for multigraph-specific queries
+

@@ -1,2 +1,55 @@
 # competitive-programming-library
-yimiya's 競プロライブラリ
+
+AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラミングライブラリです。ヘッダーは `library/` に分割し、`python tools/bundle.py` で単一ファイルの `template.cpp` を生成できます。
+
+## 一覧
+
+`Verified` は現時点の検証状態です。`local` はローカルのコンパイル／ランダム差分テスト済み、`adapter` は Library Checker 用コードをコンパイル済み（オンライン提出は未実施）を表します。
+
+| Category | Library | File | Complexity | Verified |
+|---|---|---|---|---|
+| Basic | helpers / compression | `library/basic/base.hpp` | compression `O(N log N)` | local |
+| Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
+| Math | ModInt / Combination | `library/math/` | pow `O(log N)`, combination build `O(N)`, query `O(1)` | local |
+| Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
+| Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
+| Data structure | Fenwick tree | `library/data_structure/fenwick_tree.hpp` | build `O(N)`, query/update `O(log N)` | local, adapter |
+| Data structure | Segment tree / Lazy segment tree | `library/data_structure/*segtree.hpp` | build `O(N)`, query/update `O(log N)` | local |
+| Data structure | Sparse table | `library/data_structure/sparse_table.hpp` | build `O(N log N)`, query `O(1)` | local, adapter |
+| Graph | BFS / 01-BFS / Dijkstra / Bellman-Ford / Floyd-Warshall / topo sort | `library/graph/shortest_path.hpp` | standard bounds | local, adapter |
+| Graph | SCC / 2-SAT | `library/graph/scc.hpp`, `two_sat.hpp` | `O(N+M)` | local, adapter |
+| Graph | Kruskal / Dinic | `library/graph/mst.hpp`, `dinic.hpp` | `O(M log M)`, `O(V^2E)` | local |
+| Graph | cycle recovery | `library/graph/cycle.hpp` | ordinary/odd `O(N+M)`; shortest/even `O(M(N+M))` | local random |
+| Tree | Binary lifting / Euler tour | `library/tree/` | build `O(N log N)`, LCA `O(log N)` | local |
+| Graph | Functional graph | `library/algorithm/functional_graph.hpp` | build `O(N log K)`, jump `O(log K)` | local random |
+| String | Rolling hash / Z / KMP / Manacher | `library/string/` | build/search `O(N)` | local, Z adapter |
+| Algorithm | LIS / run-length encoding | `library/algorithm/` | `O(N log N)` / `O(N)` | local |
+
+## 最小使用例
+
+```cpp
+#include "library/all.hpp"
+
+int main(){
+    UnionFind uf(4);
+    uf.merge(0, 1);
+    FenwickTree<long long> fw(vector<long long>{1, 2, 3});
+    cout << uf.same(0, 1) << ' ' << fw.sum(0, 3) << '\n';
+}
+```
+
+## 検証
+
+```bash
+python tools/test.py
+```
+
+GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/random_test.cpp` を実行します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
+
+## 注意
+
+- Rolling hash は法 `2^61-1` の単一ハッシュで、衝突確率は低いもののゼロではありません。
+- cycle API は返す頂点列の末尾に始点を重複させません。現在の隣接リストAPIは平行辺のedge idを保持しません。
+- 一般グラフの「長さK以上の単純サイクル」は困難なため、見逃し得るヒューリスティック版は収録していません。
+- Timer、XorShift、焼きなまし等のAHC専用品は対象外です。
+
