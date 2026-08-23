@@ -16,6 +16,10 @@ constexpr int di4[] = {-1,0,1,0};
 constexpr int dj4[] = {0,1,0,-1};
 constexpr int di8[] = {-1,-1,0,1,1,1,0,-1};
 constexpr int dj8[] = {0,1,1,1,0,-1,-1,-1};
+constexpr int tate[] = {0,-1,0,1};
+constexpr int yoko[] = {1,0,-1,0};
+constexpr int etate[] = {0,-1,-1,-1,0,1,1,1};
+constexpr int eyoko[] = {1,1,0,-1,-1,-1,0,1};
 
 template<class C> int sz(const C& c){ return (int)c.size(); }
 
@@ -51,6 +55,8 @@ template<class T> vector<T> sorted(vector<T> a){ sort(all(a)); return a; }
 template<class T> vector<T> sorted_unique(vector<T> a){ sort_unique(a); return a; }
 template<class T> vector<T> reversed(vector<T> a){ reverse(all(a)); return a; }
 template<class T = int> vector<T> indices(int n, T first = T{}){ vector<T> p(n); iota(all(p),first); return p; }
+template<class T, class U> int lb(const vector<T>& a, const U& x){ return lower_bound(all(a),x) - a.begin(); }
+template<class T, class U> int ub(const vector<T>& a, const U& x){ return upper_bound(all(a),x) - a.begin(); }
 template<class T> vector<int> argsort(const vector<T>& a){ vector<int> p(a.size()); iota(all(p),0); stable_sort(all(p),[&](int i,int j){ return a[i] < a[j]; }); return p; }
 inline vector<int> inverse_permutation(const vector<int>& p){ vector<int> inv(p.size()); for (int i = 0; i < sz(p); ++i) inv[p[i]] = i; return inv; }
 template<class T> map<T,int> counter(const vector<T>& a){ map<T,int> res; for (auto& x : a) ++res[x]; return res; }

@@ -23,14 +23,14 @@ template<class T> struct combination {
     }
     T get(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
-        const long long mod = T::mod(); T res = 1;
-        while (n || r){ long long ni = n % mod, ri = r % mod; if (ni < ri) return 0; res *= small_C(ni, ri); n /= mod; r /= mod; }
+        const long long modulus = T::mod(); T res = 1;
+        while (n || r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; res *= small_C(ni, ri); n /= modulus; r /= modulus; }
         return res;
     }
     T C(long long n, long long r) const { return get(n, r); }
     T permutation(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
-        const long long mod = T::mod(); if (r >= mod || (n >= mod && r > n % mod)) return 0;
+        const long long modulus = T::mod(); if (r >= modulus || (n >= modulus && r > n % modulus)) return 0;
         if (n < (long long)fact.size()) return fact[n] * ifact[n - r];
         T res = 1; for (long long i = 0; i < r; ++i) res *= T(n - i); return res;
     }

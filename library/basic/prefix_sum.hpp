@@ -6,6 +6,7 @@ template<class T> vector<T> prefix_sum(const vector<T>& a){
     for (int i = 0; i < (int)a.size(); ++i) s[i + 1] = s[i] + a[i];
     return s;
 }
+template<class T> vector<T> prefix_1Dsum(const vector<T>& a){ return prefix_sum(a); }
 template<class T> T range_sum(const vector<T>& s, int l, int r){ assert(0 <= l && l <= r && r < (int)s.size()); return s[r] - s[l]; }
 template<class T> vector<vector<T>> prefix_sum_2d(const vector<vector<T>>& a){
     int h = a.size(), w = h ? a[0].size() : 0;
@@ -25,4 +26,3 @@ template<class T> void rotate_grid(vector<vector<T>>& a, bool counterclockwise =
         if (counterclockwise) b[w - 1 - j][i] = a[i][j]; else b[j][h - 1 - i] = a[i][j];
     a = move(b);
 }
-

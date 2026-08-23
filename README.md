@@ -67,6 +67,11 @@ scan1(u, v);          // 1-indexed input -> 0-indexed values
 st(a); unq(a);        // familiar short form: sort, then erase adjacent duplicates
 auto p = indices(n);  // {0,1,...,n-1}
 auto deg = degrees(g);
+
+auto s = prefix_1Dsum(a); // existing submission name; same as prefix_sum(a)
+int pos = lb(a, x);       // lower_bound position
+rep(k, 4){ int ni = i + tate[k], nj = j + yoko[k]; }
+Yes;                     // both `Yes;` and `Yes();` are supported
 ```
 
 ## 検証

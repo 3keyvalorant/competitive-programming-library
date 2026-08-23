@@ -9,6 +9,11 @@ template<class T> using maxpq = priority_queue<T>;
 
 constexpr int INF = numeric_limits<int>::max() / 2;
 constexpr ll LINF = numeric_limits<ll>::max() / 4;
+constexpr int inf = 2'000'000'000;
+constexpr int minf = -inf;
+constexpr ll MINF = -LINF;
+constexpr ll mod = 998244353;
+constexpr ll amod = 1'000'000'007;
 
 #define rep(i,n) for (long long i = 0; i < (long long)(n); ++i)
 #define all(x) begin(x), end(x)
@@ -17,15 +22,20 @@ constexpr ll LINF = numeric_limits<ll>::max() / 4;
 template<class T, class U> bool chmin(T& a, const U& b){ if (b < a) return a = b, true; return false; }
 template<class T, class U> bool chmax(T& a, const U& b){ if (a < b) return a = b, true; return false; }
 
-inline void Yes(){ cout << "Yes\n"; }
-inline void No(){ cout << "No\n"; }
-inline void YN(bool ok){ ok ? Yes() : No(); }
+struct AnswerPrinter {
+    explicit AnswerPrinter(const char* word){ cout << word << '\n'; }
+    void operator()() const {}
+};
+#define Yes AnswerPrinter("Yes")
+#define No AnswerPrinter("No")
+inline void YN(bool ok){ if (ok) Yes; else No; }
 
 template<class T> T ceil_div(T a, T b){
     assert(b != 0);
     T q = a / b, r = a % b;
     return q + (r != 0 && ((r > 0) == (b > 0)));
 }
+template<class T> T cutup(T a, T b){ return ceil_div(a,b); }
 inline bool is_in_grid(int i, int j, int h, int w){ return 0 <= i && i < h && 0 <= j && j < w; }
 template<class T> T manhattan_distance(T x1, T y1, T x2, T y2){ return abs(x1 - x2) + abs(y1 - y2); }
 template<class T> long double euclidean_distance(T x1, T y1, T x2, T y2){ return hypot((long double)(x1 - x2), (long double)(y1 - y2)); }
@@ -37,7 +47,6 @@ template<class T> vector<int> coordinate_compress(const vector<T>& a){
     for (int i = 0; i < (int)a.size(); ++i) res[i] = lower_bound(all(xs), a[i]) - xs.begin();
     return res;
 }
-
 
 using pii = pair<int,int>;
 using pll = pair<long long,long long>;
@@ -54,6 +63,10 @@ constexpr int di4[] = {-1,0,1,0};
 constexpr int dj4[] = {0,1,0,-1};
 constexpr int di8[] = {-1,-1,0,1,1,1,0,-1};
 constexpr int dj8[] = {0,1,1,1,0,-1,-1,-1};
+constexpr int tate[] = {0,-1,0,1};
+constexpr int yoko[] = {1,0,-1,0};
+constexpr int etate[] = {0,-1,-1,-1,0,1,1,1};
+constexpr int eyoko[] = {1,1,0,-1,-1,-1,0,1};
 
 template<class C> int sz(const C& c){ return (int)c.size(); }
 
@@ -89,6 +102,8 @@ template<class T> vector<T> sorted(vector<T> a){ sort(all(a)); return a; }
 template<class T> vector<T> sorted_unique(vector<T> a){ sort_unique(a); return a; }
 template<class T> vector<T> reversed(vector<T> a){ reverse(all(a)); return a; }
 template<class T = int> vector<T> indices(int n, T first = T{}){ vector<T> p(n); iota(all(p),first); return p; }
+template<class T, class U> int lb(const vector<T>& a, const U& x){ return lower_bound(all(a),x) - a.begin(); }
+template<class T, class U> int ub(const vector<T>& a, const U& x){ return upper_bound(all(a),x) - a.begin(); }
 template<class T> vector<int> argsort(const vector<T>& a){ vector<int> p(a.size()); iota(all(p),0); stable_sort(all(p),[&](int i,int j){ return a[i] < a[j]; }); return p; }
 inline vector<int> inverse_permutation(const vector<int>& p){ vector<int> inv(p.size()); for (int i = 0; i < sz(p); ++i) inv[p[i]] = i; return inv; }
 template<class T> map<T,int> counter(const vector<T>& a){ map<T,int> res; for (auto& x : a) ++res[x]; return res; }
@@ -113,6 +128,7 @@ template<class T> vector<T> prefix_sum(const vector<T>& a){
     for (int i = 0; i < (int)a.size(); ++i) s[i + 1] = s[i] + a[i];
     return s;
 }
+template<class T> vector<T> prefix_1Dsum(const vector<T>& a){ return prefix_sum(a); }
 template<class T> T range_sum(const vector<T>& s, int l, int r){ assert(0 <= l && l <= r && r < (int)s.size()); return s[r] - s[l]; }
 template<class T> vector<vector<T>> prefix_sum_2d(const vector<vector<T>>& a){
     int h = a.size(), w = h ? a[0].size() : 0;
@@ -132,7 +148,6 @@ template<class T> void rotate_grid(vector<vector<T>>& a, bool counterclockwise =
         if (counterclockwise) b[w - 1 - j][i] = a[i][j]; else b[j][h - 1 - i] = a[i][j];
     a = move(b);
 }
-
 
 template<int MOD> struct ModInt {
     int v;
@@ -180,14 +195,14 @@ template<class T> struct combination {
     }
     T get(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
-        const long long mod = T::mod(); T res = 1;
-        while (n || r){ long long ni = n % mod, ri = r % mod; if (ni < ri) return 0; res *= small_C(ni, ri); n /= mod; r /= mod; }
+        const long long modulus = T::mod(); T res = 1;
+        while (n || r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; res *= small_C(ni, ri); n /= modulus; r /= modulus; }
         return res;
     }
     T C(long long n, long long r) const { return get(n, r); }
     T permutation(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
-        const long long mod = T::mod(); if (r >= mod || (n >= mod && r > n % mod)) return 0;
+        const long long modulus = T::mod(); if (r >= modulus || (n >= modulus && r > n % modulus)) return 0;
         if (n < (long long)fact.size()) return fact[n] * ifact[n - r];
         T res = 1; for (long long i = 0; i < r; ++i) res *= T(n - i); return res;
     }
@@ -218,10 +233,10 @@ vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
 }
 
 
-inline long long modpow(long long a, long long n, long long mod){ long long r = 1 % mod; for (a %= mod; n; n >>= 1, a = (long long)((__int128)a * a % mod)) if (n & 1) r = (long long)((__int128)r * a % mod); return r; }
-inline long long safe_mod_multiply(long long a, long long b, long long mod){ return (long long)((__int128)a * b % mod); }
+inline long long modpow(long long a, long long n, long long modulus){ long long r = 1 % modulus; for (a %= modulus; n; n >>= 1, a = (long long)((__int128)a * a % modulus)) if (n & 1) r = (long long)((__int128)r * a % modulus); return r; }
+inline long long safe_mod_multiply(long long a, long long b, long long modulus){ return (long long)((__int128)a * b % modulus); }
 inline long long extgcd(long long a, long long b, long long& x, long long& y){ if (!b){ x = a >= 0 ? 1 : -1; y = 0; return abs(a); } long long g = extgcd(b, a % b, y, x); y -= a / b * x; return g; }
-inline optional<long long> modular_inverse(long long a, long long mod){ long long x, y, g = extgcd(a, mod, x, y); if (g != 1) return nullopt; return (x % mod + mod) % mod; }
+inline optional<long long> modular_inverse(long long a, long long modulus){ long long x, y, g = extgcd(a, modulus, x, y); if (g != 1) return nullopt; return (x % modulus + modulus) % modulus; }
 inline pair<long long, long long> crt(const vector<long long>& r, const vector<long long>& m){
     assert(r.size() == m.size()); long long r0 = 0, m0 = 1;
     for (int i = 0; i < (int)r.size(); ++i){
@@ -238,7 +253,6 @@ inline bool is_prime(long long n){ if (n < 2) return false; for (long long p = 2
 inline map<long long, int> prime_factorize(long long n){ map<long long, int> f; for (long long p = 2; p * p <= n; ++p) while (n % p == 0) ++f[p], n /= p; if (n > 1) ++f[n]; return f; }
 inline vector<long long> divisors(long long n){ vector<long long> d; for (long long i = 1; i * i <= n; ++i) if (n % i == 0){ d.push_back(i); if (i * i != n) d.push_back(n / i); } sort(all(d)); return d; }
 inline long long integer_sqrt(long long n){ assert(n >= 0); long long x = sqrt((long double)n); while ((__int128)(x + 1) * (x + 1) <= n) ++x; while ((__int128)x * x > n) --x; return x; }
-
 
 struct UnionFind {
     vector<int> p;
@@ -457,7 +471,7 @@ inline vector<int> bfs(const vector<vector<int>>& g, const vector<int>& starts){
 inline vector<int> bfs(const vector<vector<int>>& g, int s){ return bfs(g, vector<int>{s}); }
 
 template<class T> vector<T> bfs01(const vector<vector<pair<int,T>>>& g, int s){
-    const T inf = numeric_limits<T>::max() / 4; vector<T> d(g.size(), inf); deque<int> q; d[s] = 0; q.push_back(s);
+    const T infinity = numeric_limits<T>::max() / 4; vector<T> d(g.size(), infinity); deque<int> q; d[s] = 0; q.push_back(s);
     while (!q.empty()){ int v = q.front(); q.pop_front(); for (auto [to,w] : g[v]){ assert(w == 0 || w == 1); if (d[to] > d[v] + w){ d[to] = d[v] + w; w ? q.push_back(to) : q.push_front(to); } } }
     return d;
 }
@@ -469,7 +483,7 @@ template<class T = long long> struct Dijkstra {
     void make_directedgraph(int u, int v, T w){ g[u].push_back({v,w}); }
     void make_indirectedgraph(int u, int v, T w){ make_directedgraph(u,v,w); make_directedgraph(v,u,w); }
     const vector<T>& do_dijkstra(int s){
-        start = s; T inf = numeric_limits<T>::max() / 4; dist.assign(n, inf); prev.assign(n, -1); minpq<pair<T,int>> q; dist[s] = 0; q.push({0,s});
+        start = s; T infinity = numeric_limits<T>::max() / 4; dist.assign(n, infinity); prev.assign(n, -1); minpq<pair<T,int>> q; dist[s] = 0; q.push({0,s});
         while (!q.empty()){ auto [d,v] = q.top(); q.pop(); if (d != dist[v]) continue; for (auto [to,w] : g[v]) if (chmin(dist[to], d+w)) prev[to] = v, q.push({dist[to],to}); }
         return dist;
     }
@@ -479,15 +493,15 @@ template<class T = long long> struct Dijkstra {
 
 template<class T> struct BellmanFordResult { vector<T> dist; vector<char> negative; bool has_negative_cycle; };
 template<class T> BellmanFordResult<T> bellman_ford(int n, const vector<tuple<int,int,T>>& edges, int s){
-    T inf = numeric_limits<T>::max()/4; vector<T> d(n,inf); vector<char> neg(n); d[s]=0;
-    for (int i=0;i<n;++i) for (auto [u,v,w]:edges) if (d[u]!=inf && d[v]>max(-inf,d[u]+w)){ d[v]=max(-inf,d[u]+w); if(i==n-1) neg[v]=1; }
+    T infinity = numeric_limits<T>::max()/4; vector<T> d(n,infinity); vector<char> neg(n); d[s]=0;
+    for (int i=0;i<n;++i) for (auto [u,v,w]:edges) if (d[u]!=infinity && d[v]>max(-infinity,d[u]+w)){ d[v]=max(-infinity,d[u]+w); if(i==n-1) neg[v]=1; }
     for(int i=0;i<n;++i) for(auto [u,v,w]:edges) if(neg[u]) neg[v]=1;
     return {d,neg,any_of(all(neg),[](char x){return x;})};
 }
 
 template<class T> void floyd_warshall(vector<vector<T>>& d){
-    int n=d.size(); T inf=numeric_limits<T>::max()/4;
-    for(int k=0;k<n;++k)for(int i=0;i<n;++i)if(d[i][k]!=inf)for(int j=0;j<n;++j)if(d[k][j]!=inf)chmin(d[i][j],d[i][k]+d[k][j]);
+    int n=d.size(); T infinity=numeric_limits<T>::max()/4;
+    for(int k=0;k<n;++k)for(int i=0;i<n;++i)if(d[i][k]!=infinity)for(int j=0;j<n;++j)if(d[k][j]!=infinity)chmin(d[i][j],d[i][k]+d[k][j]);
 }
 
 inline optional<vector<int>> topological_sort(const vector<vector<int>>& g){
@@ -540,18 +554,18 @@ template<class Cap, class Cost> struct MinCostFlow {
     MinCostFlow(int m = 0) : n(m), g(m) {}
     void add_edge(int u, int v, Cap cap, Cost cost){ int a = g[u].size(), b = g[v].size(); g[u].push_back({v,b,cap,cost}); g[v].push_back({u,a,Cap{},-cost}); }
     pair<Cap,Cost> flow(int s, int t, Cap limit = numeric_limits<Cap>::max()){
-        const Cost inf = numeric_limits<Cost>::max() / 4; vector<Cost> h(n, inf); h[s] = 0;
-        for (int it = 0; it < n; ++it){ bool changed = false; for (int v = 0; v < n; ++v) if (h[v] != inf) for (auto& e : g[v]) if (e.cap > 0 && h[e.to] > h[v] + e.cost) h[e.to] = h[v] + e.cost, changed = true; if (!changed) break; }
-        for (Cost& x : h) if (x == inf) x = 0;
+        const Cost infinity = numeric_limits<Cost>::max() / 4; vector<Cost> h(n, infinity); h[s] = 0;
+        for (int it = 0; it < n; ++it){ bool changed = false; for (int v = 0; v < n; ++v) if (h[v] != infinity) for (auto& e : g[v]) if (e.cap > 0 && h[e.to] > h[v] + e.cost) h[e.to] = h[v] + e.cost, changed = true; if (!changed) break; }
+        for (Cost& x : h) if (x == infinity) x = 0;
         Cap sent{}; Cost total{}; vector<Cost> dist(n); vector<int> pv(n), pe(n);
         while (sent < limit){
-            fill(all(dist), inf); dist[s] = 0; minpq<pair<Cost,int>> q; q.push({0,s});
+            fill(all(dist), infinity); dist[s] = 0; minpq<pair<Cost,int>> q; q.push({0,s});
             while (!q.empty()){
                 auto [d,v] = q.top(); q.pop(); if (d != dist[v]) continue;
                 for (int i = 0; i < (int)g[v].size(); ++i){ auto& e = g[v][i]; Cost nd = d + e.cost + h[v] - h[e.to]; if (e.cap > 0 && chmin(dist[e.to], nd)) pv[e.to] = v, pe[e.to] = i, q.push({nd,e.to}); }
             }
-            if (dist[t] == inf) break;
-            for (int v = 0; v < n; ++v) if (dist[v] != inf) h[v] += dist[v];
+            if (dist[t] == infinity) break;
+            for (int v = 0; v < n; ++v) if (dist[v] != infinity) h[v] += dist[v];
             Cap add = limit - sent; for (int v = t; v != s; v = pv[v]) chmin(add, g[pv[v]][pe[v]].cap);
             sent += add; total += (Cost)add * h[t];
             for (int v = t; v != s; v = pv[v]){ Edge& e = g[pv[v]][pe[v]]; e.cap -= add; g[v][e.rev].cap += add; }
