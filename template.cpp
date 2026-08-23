@@ -126,6 +126,29 @@ template<class T> struct combination {
     T calu(long long n, long long r) const { return get(n, r); }
 };
 
+template<int MOD, int PrimitiveRoot = 3>
+void ntt(vector<ModInt<MOD>>& a, bool inverse){
+    int n = a.size(); assert(n && (n & (n - 1)) == 0 && (MOD - 1) % n == 0);
+    for (int i = 1, j = 0; i < n; ++i){
+        int bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;
+        if (i < j) swap(a[i], a[j]);
+    }
+    for (int len = 2; len <= n; len <<= 1){
+        ModInt<MOD> root = ModInt<MOD>(PrimitiveRoot).pow((MOD - 1) / len); if (inverse) root = root.inv();
+        for (int i = 0; i < n; i += len){ ModInt<MOD> w = 1; for (int j = 0; j < len / 2; ++j){ auto u = a[i+j], v = a[i+j+len/2] * w; a[i+j] = u + v; a[i+j+len/2] = u - v; w *= root; } }
+    }
+    if (inverse){ ModInt<MOD> inv_n = ModInt<MOD>(n).inv(); for (auto& x : a) x *= inv_n; }
+}
+
+template<int MOD, int PrimitiveRoot = 3>
+vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
+    if (a.empty() || b.empty()) return {};
+    if (min(a.size(), b.size()) <= 32){ vector<ModInt<MOD>> c(a.size() + b.size() - 1); for (int i = 0; i < (int)a.size(); ++i) for (int j = 0; j < (int)b.size(); ++j) c[i+j] += a[i] * b[j]; return c; }
+    int need = a.size() + b.size() - 1, n = 1; while (n < need) n <<= 1; assert((MOD - 1) % n == 0);
+    a.resize(n); b.resize(n); ntt<MOD,PrimitiveRoot>(a, false); ntt<MOD,PrimitiveRoot>(b, false); for (int i = 0; i < n; ++i) a[i] *= b[i]; ntt<MOD,PrimitiveRoot>(a, true); a.resize(need); return a;
+}
+
+
 inline long long modpow(long long a, long long n, long long mod){ long long r = 1 % mod; for (a %= mod; n; n >>= 1, a = (long long)((__int128)a * a % mod)) if (n & 1) r = (long long)((__int128)r * a % mod); return r; }
 inline long long safe_mod_multiply(long long a, long long b, long long mod){ return (long long)((__int128)a * b % mod); }
 inline long long extgcd(long long a, long long b, long long& x, long long& y){ if (!b){ x = a >= 0 ? 1 : -1; y = 0; return abs(a); } long long g = extgcd(b, a % b, y, x); y -= a / b * x; return g; }
@@ -173,6 +196,23 @@ template<class T> struct WeightedUnionFind {
     int size(int x){ return -p[leader(x)]; }
 };
 
+
+struct RollbackUnionFind {
+    vector<int> p; vector<pair<int,int>> history; int components = 0;
+    RollbackUnionFind(int n = 0){ reset(n); }
+    void reset(int n){ p.assign(n, -1); history.clear(); components = n; }
+    int leader(int v) const { while (p[v] >= 0) v = p[v]; return v; }
+    bool same(int u, int v) const { return leader(u) == leader(v); }
+    int size(int v) const { return -p[leader(v)]; }
+    bool merge(int u, int v){
+        u = leader(u); v = leader(v); if (u == v){ history.push_back({-1,-1}); return false; }
+        if (-p[u] < -p[v]) swap(u, v);
+        history.push_back({u,p[u]}); history.push_back({v,p[v]}); p[u] += p[v]; p[v] = u; --components; return true;
+    }
+    int snapshot() const { return history.size(); }
+    void undo(){ assert(!history.empty()); if (history.back().first < 0){ history.pop_back(); return; } auto [v,pv] = history.back(); history.pop_back(); auto [u,pu] = history.back(); history.pop_back(); p[u] = pu; p[v] = pv; ++components; }
+    void rollback(int state){ assert(0 <= state && state <= (int)history.size()); while ((int)history.size() > state) undo(); }
+};
 
 template<class UInt = unsigned long long, int B = numeric_limits<UInt>::digits> struct BinaryTrie {
     static_assert(is_unsigned<UInt>::value, "BinaryTrie requires an unsigned integer type");
@@ -302,6 +342,43 @@ template<class T, T (*op)(T,T)> struct SparseTable {
     T query(int l, int r) const { return prod(l, r); }
 };
 
+
+template<class UInt = unsigned long long, int B = numeric_limits<UInt>::digits>
+struct WaveletMatrix {
+    static_assert(is_unsigned<UInt>::value, "WaveletMatrix requires an unsigned integer type");
+    int n = 0; vector<int> mid; vector<vector<int>> ones;
+    WaveletMatrix() = default; WaveletMatrix(const vector<UInt>& a){ build(a); }
+    void build(vector<UInt> a){
+        if constexpr (B < numeric_limits<UInt>::digits) for (UInt x : a) assert((x >> B) == 0);
+        n = a.size(); mid.assign(B, 0); ones.assign(B, vector<int>(n + 1));
+        vector<UInt> zero, one; zero.reserve(n); one.reserve(n);
+        for (int level = 0; level < B; ++level){
+            int bit = B - 1 - level; zero.clear(); one.clear();
+            for (int i = 0; i < n; ++i){ int b = a[i] >> bit & 1; ones[level][i+1] = ones[level][i] + b; (b ? one : zero).push_back(a[i]); }
+            mid[level] = zero.size(); copy(all(zero), a.begin()); copy(all(one), a.begin() + mid[level]);
+        }
+    }
+    UInt kth_smallest(int l, int r, int k) const {
+        assert(0 <= l && l <= r && r <= n && 0 <= k && k < r - l); UInt res = 0;
+        for (int level = 0; level < B; ++level){ int ol = ones[level][l], orr = ones[level][r], zeros = (r-l) - (orr-ol); if (k < zeros) l -= ol, r -= orr; else res |= UInt(1) << (B-1-level), k -= zeros, l = mid[level]+ol, r = mid[level]+orr; }
+        return res;
+    }
+    int rank(UInt x, int l, int r) const {
+        assert(0 <= l && l <= r && r <= n);
+        if constexpr (B < numeric_limits<UInt>::digits) if (x >> B) return 0;
+        for (int level = 0; level < B; ++level){ int ol = ones[level][l], orr = ones[level][r]; if (x >> (B-1-level) & 1) l = mid[level]+ol, r = mid[level]+orr; else l -= ol, r -= orr; }
+        return r - l;
+    }
+    int count_less(int l, int r, UInt x) const {
+        assert(0 <= l && l <= r && r <= n); int res = 0;
+        if constexpr (B < numeric_limits<UInt>::digits) if (x >> B) return r - l;
+        for (int level = 0; level < B; ++level){ int ol = ones[level][l], orr = ones[level][r], zeros = (r-l) - (orr-ol); if (x >> (B-1-level) & 1) res += zeros, l = mid[level]+ol, r = mid[level]+orr; else l -= ol, r -= orr; }
+        return res;
+    }
+    int range_freq(int l, int r, UInt lower, UInt upper) const { return count_less(l,r,upper) - count_less(l,r,lower); }
+    optional<UInt> prev_value(int l, int r, UInt upper) const { int k = count_less(l,r,upper); if (!k) return nullopt; return kth_smallest(l,r,k-1); }
+    optional<UInt> next_value(int l, int r, UInt lower) const { int k = count_less(l,r,lower); if (k == r-l) return nullopt; return kth_smallest(l,r,k); }
+};
 
 inline vector<int> bfs(const vector<vector<int>>& g, const vector<int>& starts){
     vector<int> d(g.size(), -1); queue<int> q; for (int s : starts) if (d[s] < 0) d[s] = 0, q.push(s);
@@ -443,6 +520,20 @@ struct LowLink {
     vector<int> articulation_points() const { vector<int> res; for (int v = 0; v < n; ++v) if (articulation[v]) res.push_back(v); return res; }
     vector<pair<int,int>> bridge_edges() const { vector<pair<int,int>> res; for (int id : bridges) res.push_back(edges[id]); return res; }
 };
+
+struct TwoEdgeConnectedComponents {
+    LowLink lowlink; vector<int> comp; vector<vector<int>> groups, forest;
+    TwoEdgeConnectedComponents(int n = 0) : lowlink(n) {}
+    int add_edge(int u, int v){ return lowlink.add_edge(u, v); }
+    int build(){
+        lowlink.build(); int n = lowlink.n; vector<char> bridge(lowlink.edges.size()); for (int id : lowlink.bridges) bridge[id] = true;
+        comp.assign(n, -1); groups.clear();
+        for (int s = 0; s < n; ++s) if (comp[s] < 0){ int id = groups.size(); groups.push_back({}); queue<int> q; q.push(s); comp[s] = id; while (!q.empty()){ int v = q.front(); q.pop(); groups[id].push_back(v); for (auto [to,e] : lowlink.g[v]) if (!bridge[e] && comp[to] < 0) comp[to] = id, q.push(to); } }
+        forest.assign(groups.size(), {}); for (int id : lowlink.bridges){ auto [u,v] = lowlink.edges[id]; int a = comp[u], b = comp[v]; forest[a].push_back(b); forest[b].push_back(a); }
+        return groups.size();
+    }
+};
+
 
 namespace cycle_detail {
 inline vector<int> path(const vector<vector<int>>& g,int s,int t,int banned_vertex=-1,pair<int,int> banned_edge={-1,-1},bool directed=true){
@@ -634,11 +725,15 @@ struct RollingHash {
 
 
 inline vector<int> suffix_array(const string& s){
-    int n = s.size(); vector<int> sa(n), rank(n), next_rank(n); iota(all(sa), 0); for (int i = 0; i < n; ++i) rank[i] = (unsigned char)s[i];
+    int n = s.size(); if (!n) return {}; vector<int> sa(n), rank(n), next_rank(n), count(max(n,256));
+    for (unsigned char c : s) ++count[c];
+    for (int i = 1; i < 256; ++i) count[i] += count[i-1];
+    for (int i = n-1; i >= 0; --i) sa[--count[(unsigned char)s[i]]] = i;
+    int classes = 1; rank[sa[0]] = 0; for (int i = 1; i < n; ++i){ if (s[sa[i-1]] != s[sa[i]]) ++classes; rank[sa[i]] = classes - 1; }
     for (int k = 1; k < n; k <<= 1){
-        sort(all(sa), [&](int i, int j){ if (rank[i] != rank[j]) return rank[i] < rank[j]; int ri = i + k < n ? rank[i + k] : -1, rj = j + k < n ? rank[j + k] : -1; return ri < rj; });
-        next_rank[sa[0]] = 0; for (int i = 1; i < n; ++i){ int a = sa[i-1], b = sa[i]; next_rank[b] = next_rank[a] + (rank[a] != rank[b] || (a+k<n?rank[a+k]:-1) != (b+k<n?rank[b+k]:-1)); } rank.swap(next_rank);
-        if (rank[sa.back()] == n - 1) break;
+        vector<int> second; second.reserve(n); for (int i = n-k; i < n; ++i) second.push_back(i); for (int v : sa) if (v >= k) second.push_back(v-k);
+        fill(count.begin(), count.begin()+classes, 0); for (int v : second) ++count[rank[v]]; for (int i = 1; i < classes; ++i) count[i] += count[i-1]; for (int i = n-1; i >= 0; --i) sa[--count[rank[second[i]]]] = second[i];
+        next_rank[sa[0]] = 0; int next_classes = 1; for (int i = 1; i < n; ++i){ int a=sa[i-1],b=sa[i]; if (rank[a] != rank[b] || (a+k<n?rank[a+k]:-1) != (b+k<n?rank[b+k]:-1)) ++next_classes; next_rank[b] = next_classes - 1; } rank.swap(next_rank); classes = next_classes; if (classes == n) break;
     }
     return sa;
 }

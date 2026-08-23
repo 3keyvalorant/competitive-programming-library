@@ -4,11 +4,13 @@
 
 - Basic helpers, prefix sums, coordinate compression, grid helpers
 - ModInt, combinations, number theory
+- NTT convolution
 - Union-Find, weighted Union-Find, Fenwick tree, segment trees, sparse table
 - Graph traversal, shortest paths, SCC, 2-SAT, MST, max flow, cycle utilities
 - Binary lifting, Euler tour, functional graph
 - Heavy-Light Decomposition, rerooting, LowLink
 - Min-Cost Flow, Binary Trie, Li Chao Tree, Mo's algorithm
+- Rollback Union-Find, Wavelet Matrix, two-edge-connected components
 - Rolling hash, Z algorithm, KMP, Manacher, LIS, run-length encoding
 - Suffix Array and LCP array
 
@@ -28,11 +30,11 @@
 
 ## Library Checker status
 
-- Adapters exist for union-find, point-add/range-sum, static range sum/RMQ, shortest path, SCC, 2-SAT, Z algorithm, suffix array, vertex-add/path-sum, and line-add/get-min.
+- Adapters exist for union-find, point-add/range-sum, static range sum/RMQ, shortest path, SCC, 2-SAT, Z algorithm, suffix array, vertex-add/path-sum, line-add/get-min, convolution, range-kth-smallest, and two-edge-connected components.
 - Status: locally compile-tested, not online-judge verified.
 
 ## Next candidates
 
-- NTT/convolution, rollback Union-Find, biconnected components, Wavelet Matrix
+- Pollard-Rho factorization, biconnected components, offline dynamic connectivity, Disjoint Sparse Table
 - Online Library Checker submissions and badges
 - Edge-id based cycle API for multigraph-specific queries
