@@ -9,6 +9,7 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Category | Library | File | Complexity | Verified |
 |---|---|---|---|---|
 | Basic | helpers / compression | `library/basic/base.hpp` | compression `O(N log N)` | local |
+| Basic | input/output / graph reader / container shortcuts | `library/basic/convenience.hpp` | mostly `O(N)` wrappers | local |
 | Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
 | Math | ModInt / adaptive Combination | `library/math/` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r))` per base-`MOD` digit | local random |
 | Math | NTT convolution | `library/math/convolution.hpp` | `O(N log N)` | local random, adapter |
@@ -49,6 +50,19 @@ int main(){
 }
 ```
 
+頻出処理は次のように短縮できます。
+
+```cpp
+int n, m;
+scan(n, m);
+auto a = read_vector<ll>(n);
+auto g = read_graph(n, m); // 1-indexed入力を0-indexed隣接リストへ
+print(sorted_unique(a));
+
+auto dp = make_vec(n, m, LINF);
+ll x = first_true(0LL, 1'000'000'001LL, [&](ll v){ return condition(v); });
+```
+
 ## 検証
 
 ```bash
@@ -62,6 +76,7 @@ GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/ran
 - `combination<T>(N)` は `N <= 2,000,000` なら階乗表を構築し、それより大きければ巨大配列を確保せず乗算式へ切り替えます。`N >= MOD` の `C` はLucasの定理を使うため、`MOD` は素数を想定します。
 - NTTは既定で `998244353` と原始根 `3` を使用します。他の法ではNTT可能な素数と原始根をテンプレート引数で指定してください。
 - Wavelet Matrixは符号なし整数用です。値域が分かる場合は `WaveletMatrix<unsigned, 30>` のようにビット数を絞るとメモリと定数倍を削減できます。
+- `read_graph/read_tree` は既定で1-indexed入力を0-indexedへ変換します。0-indexed入力では最後の引数に `0` を指定してください。
 - Rolling hash は法 `2^61-1` の単一ハッシュで、衝突確率は低いもののゼロではありません。
 - cycle API は返す頂点列の末尾に始点を重複させません。現在の隣接リストAPIは平行辺のedge idを保持しません。
 - Min-Cost Flow は到達可能な負閉路がないことを前提とします。Li Chao Treeの問い合わせ座標は構築時に渡してください。

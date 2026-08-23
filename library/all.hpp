@@ -1,5 +1,6 @@
 #pragma once
 #include "basic/base.hpp"
+#include "basic/convenience.hpp"
 #include "basic/prefix_sum.hpp"
 #include "math/modint.hpp"
 #include "math/combination.hpp"

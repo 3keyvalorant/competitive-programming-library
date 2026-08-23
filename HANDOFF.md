@@ -3,6 +3,7 @@
 ## Implemented
 
 - Basic helpers, prefix sums, coordinate compression, grid helpers
+- Convenience helpers for input/output, graph loading, containers, multidimensional vectors, and integer binary search
 - ModInt, combinations, number theory
 - NTT convolution
 - Union-Find, weighted Union-Find, Fenwick tree, segment trees, sparse table

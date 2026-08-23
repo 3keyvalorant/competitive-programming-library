@@ -11,6 +11,8 @@ bool has_simple_cycle_brute(const vector<vector<int>>&g,int parity){
 
 int main(){
     mt19937 rng(712367);
+    {vector<int>a{3,1,3,2};assert(sorted(a)==vector<int>({1,2,3,3})&&sorted_unique(a)==vector<int>({1,2,3})&&reversed(a)==vector<int>({2,3,1,3}));assert(argsort(a)==vector<int>({1,3,0,2})&&inverse_permutation(vector<int>{2,0,1})==vector<int>({1,2,0}));assert(counter(a)[3]==2&&mex(vector<int>{0,2,1,4})==3&&sum(a)==9&&min_value(a)==1&&max_value(a)==3&&bit_count(0b101101)==4);assert(floor_div(-7LL,3LL)==-3&&mod_floor(-7LL,3LL)==2&&floor_div(7LL,-3LL)==-3&&mod_floor(7LL,-3LL)==-2);auto cube=make_vec(2,3,4,-1LL);assert(cube.size()==2&&cube[0].size()==3&&cube[0][0].size()==4&&cube[1][2][3]==-1);assert(first_true(0LL,100LL,[](ll x){return x*x>=2000;})==45&&last_true(0LL,100LL,[](ll x){return x*x<=2000;})==44);long long value=0;rrep(i,4)value=value*10+i;assert(value==3210&&di4[0]==-1&&dj8[2]==1);}
+    {istringstream input("4 10 20 30 40 1 2 2 3");auto* old=cin.rdbuf(input.rdbuf());int n;scan(n);auto a=read_vector<int>(n);auto g=read_graph(3,2);cin.rdbuf(old);assert(a==vector<int>({10,20,30,40})&&g[1]==vector<int>({0,2}));ostringstream output;auto* old_out=cout.rdbuf(output.rdbuf());print(1,2,"x");print(a);cout.rdbuf(old_out);assert(output.str()=="1 2 x\n10 20 30 40\n");}
     for(int n=1;n<=30;++n){
         vector<long long>a(n);for(auto&x:a)x=(int)(rng()%21)-10;FenwickTree<long long>fw(a);segtree<long long,sum_op,sum_e>sg(a);
         for(int q=0;q<100;++q){int l=rng()%n,r=rng()%n;if(l>r)swap(l,r);++r;long long want=accumulate(a.begin()+l,a.begin()+r,0LL);assert(fw.sum(l,r)==want&&sg.prod(l,r)==want);int i=rng()%n,d=(int)(rng()%11)-5;a[i]+=d;fw.add(i,d);sg.set(i,a[i]);}
