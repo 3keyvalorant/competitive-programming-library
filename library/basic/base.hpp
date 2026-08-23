@@ -10,6 +10,11 @@ template<class T> using maxpq = priority_queue<T>;
 
 constexpr int INF = numeric_limits<int>::max() / 2;
 constexpr ll LINF = numeric_limits<ll>::max() / 4;
+constexpr int inf = 2'000'000'000;
+constexpr int minf = -inf;
+constexpr ll MINF = -LINF;
+constexpr ll mod = 998244353;
+constexpr ll amod = 1'000'000'007;
 
 #define rep(i,n) for (long long i = 0; i < (long long)(n); ++i)
 #define all(x) begin(x), end(x)
@@ -18,15 +23,20 @@ constexpr ll LINF = numeric_limits<ll>::max() / 4;
 template<class T, class U> bool chmin(T& a, const U& b){ if (b < a) return a = b, true; return false; }
 template<class T, class U> bool chmax(T& a, const U& b){ if (a < b) return a = b, true; return false; }
 
-inline void Yes(){ cout << "Yes\n"; }
-inline void No(){ cout << "No\n"; }
-inline void YN(bool ok){ ok ? Yes() : No(); }
+struct AnswerPrinter {
+    explicit AnswerPrinter(const char* word){ cout << word << '\n'; }
+    void operator()() const {}
+};
+#define Yes AnswerPrinter("Yes")
+#define No AnswerPrinter("No")
+inline void YN(bool ok){ if (ok) Yes; else No; }
 
 template<class T> T ceil_div(T a, T b){
     assert(b != 0);
     T q = a / b, r = a % b;
     return q + (r != 0 && ((r > 0) == (b > 0)));
 }
+template<class T> T cutup(T a, T b){ return ceil_div(a,b); }
 inline bool is_in_grid(int i, int j, int h, int w){ return 0 <= i && i < h && 0 <= j && j < w; }
 template<class T> T manhattan_distance(T x1, T y1, T x2, T y2){ return abs(x1 - x2) + abs(y1 - y2); }
 template<class T> long double euclidean_distance(T x1, T y1, T x2, T y2){ return hypot((long double)(x1 - x2), (long double)(y1 - y2)); }
@@ -38,4 +48,3 @@ template<class T> vector<int> coordinate_compress(const vector<T>& a){
     for (int i = 0; i < (int)a.size(); ++i) res[i] = lower_bound(all(xs), a[i]) - xs.begin();
     return res;
 }
-
