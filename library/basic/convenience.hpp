@@ -23,6 +23,8 @@ template<class T> void scan(T& x){ cin >> x; }
 template<class T, class U> void scan(pair<T,U>& p){ scan(p.first); scan(p.second); }
 template<class T> void scan(vector<T>& a){ for (auto& x : a) scan(x); }
 template<class T, class U, class... Ts> void scan(T& x, U& y, Ts&... xs){ scan(x); scan(y, xs...); }
+template<class T> void scan1(T& x){ scan(x); --x; }
+template<class T, class... Ts> void scan1(T& x, Ts&... xs){ scan1(x); scan1(xs...); }
 
 template<class T> vector<T> read_vector(int n){ vector<T> a(n); scan(a); return a; }
 template<class T> vector<vector<T>> read_matrix(int h, int w){ vector a(h, vector<T>(w)); scan(a); return a; }
@@ -41,9 +43,14 @@ template<class T> vector<vector<pair<int,T>>> read_weighted_graph(int n, int m, 
 template<class T> vector<vector<pair<int,T>>> read_weighted_tree(int n, int index_base = 1){ return read_weighted_graph<T>(n,n-1,false,index_base); }
 
 template<class T> void sort_unique(vector<T>& a){ sort(all(a)); a.erase(unique(all(a)), a.end()); }
+template<class C> void st(C& a){ sort(all(a)); }
+template<class C> void rst(C& a){ sort(rall(a)); }
+template<class C> void rev(C& a){ reverse(all(a)); }
+template<class T> void unq(vector<T>& a){ a.erase(unique(all(a)), a.end()); }
 template<class T> vector<T> sorted(vector<T> a){ sort(all(a)); return a; }
 template<class T> vector<T> sorted_unique(vector<T> a){ sort_unique(a); return a; }
 template<class T> vector<T> reversed(vector<T> a){ reverse(all(a)); return a; }
+template<class T = int> vector<T> indices(int n, T first = T{}){ vector<T> p(n); iota(all(p),first); return p; }
 template<class T> vector<int> argsort(const vector<T>& a){ vector<int> p(a.size()); iota(all(p),0); stable_sort(all(p),[&](int i,int j){ return a[i] < a[j]; }); return p; }
 inline vector<int> inverse_permutation(const vector<int>& p){ vector<int> inv(p.size()); for (int i = 0; i < sz(p); ++i) inv[p[i]] = i; return inv; }
 template<class T> map<T,int> counter(const vector<T>& a){ map<T,int> res; for (auto& x : a) ++res[x]; return res; }
@@ -52,6 +59,7 @@ template<class T> T sum(const vector<T>& a){ return accumulate(all(a),T{}); }
 template<class T> T min_value(const vector<T>& a){ assert(!a.empty()); return *min_element(all(a)); }
 template<class T> T max_value(const vector<T>& a){ assert(!a.empty()); return *max_element(all(a)); }
 inline int bit_count(unsigned long long x){ return __builtin_popcountll(x); }
+template<class Graph> vector<int> degrees(const Graph& g){ vector<int> d(g.size()); for (int v = 0; v < sz(g); ++v) d[v] = sz(g[v]); return d; }
 
 template<class T> T floor_div(T a, T b){ assert(b != 0); T q = a / b, r = a % b; return q - (r != 0 && ((r > 0) != (b > 0))); }
 template<class T> T mod_floor(T a, T b){ assert(b != 0); T r = a % b; if (r != 0 && ((r > 0) != (b > 0))) r += b; return r; }

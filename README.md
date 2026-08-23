@@ -61,6 +61,12 @@ print(sorted_unique(a));
 
 auto dp = make_vec(n, m, LINF);
 ll x = first_true(0LL, 1'000'000'001LL, [&](ll v){ return condition(v); });
+
+int u, v;
+scan1(u, v);          // 1-indexed input -> 0-indexed values
+st(a); unq(a);        // familiar short form: sort, then erase adjacent duplicates
+auto p = indices(n);  // {0,1,...,n-1}
+auto deg = degrees(g);
 ```
 
 ## 検証
