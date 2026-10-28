@@ -35,6 +35,29 @@ template<class T> struct combination {
         return res;
     }
     T C(long long n, long long r) const { return get(n, r); }
+    // Choose r items with repetition from n types; H(0,0)=1.
+    T H(long long n, long long r) const {
+        if (n < 0 || r < 0) return 0;
+        if (!r) return 1;
+        if (!n) return 0;
+        if (n > LLONG_MAX - (r - 1)) throw overflow_error("H requires n+r-1 <= LLONG_MAX");
+        return C(n + (r - 1), r);
+    }
+    // Permutations of groups of indistinguishable items; same prime-modulus contract as C.
+    T multinomial(const vector<long long>& counts) const {
+        for (long long count : counts) if (count < 0) return 0;
+        long long remaining = 0;
+        for (long long count : counts){
+            if (count > LLONG_MAX - remaining) throw overflow_error("multinomial total exceeds LLONG_MAX");
+            remaining += count;
+        }
+        T result = 1;
+        for (long long count : counts){
+            if (count && count != remaining) result *= C(remaining, count);
+            remaining -= count;
+        }
+        return result;
+    }
     T permutation(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
         if (!r) return 1;

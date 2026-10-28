@@ -24,7 +24,7 @@ jobs:
       - run: python tools/test.py
       - name: Check arithmetic and memory on Linux
         run: |
-          for source in tests/modint_test.cpp tests/core_efficiency_test.cpp tests/convolution_square_test.cpp tests/exact_convolution_test.cpp tests/fourier_counting_test.cpp; do
+          for source in tests/modint_test.cpp tests/core_efficiency_test.cpp tests/convolution_square_test.cpp tests/exact_convolution_test.cpp tests/fourier_counting_test.cpp tests/combinatorics_sets_test.cpp tests/linear_algebra_test.cpp tests/probability_test.cpp; do
             binary=".build/$(basename "$source" .cpp)-sanitized"
             "$CXX" -std=c++17 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all "$source" -o "$binary"
             "$binary"

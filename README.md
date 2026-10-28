@@ -13,9 +13,10 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
 | Math | ModInt | `library/math/modint.hpp` | `+`, `-`, `*`: `O(1)`; inverse: `O(log MOD)`; power: `O(log exponent)` | local differential |
 | Math | MontgomeryModInt / fastmint / fastamint | `library/math/montgomery_modint.hpp` | arithmetic `O(1)`; inverse `O(log MOD)`; odd `1 < MOD < 2^30` | local differential |
-| Math | adaptive Combination | `library/math/combination.hpp` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r) + log MOD)` per base-`MOD` digit | local random |
+| Math | adaptive Combination / H / multinomial | `library/math/combination.hpp` | tables: build `O(N)`, C/H `O(1)`, K-group multinomial `O(K)`; large values: C via Lucas/products | local random |
 | Math | batch inverse | `library/math/batch_inverse.hpp` | `O(N + log MOD)`, one inverse | local differential, operation counts |
 | Math | NTT convolution / square | `library/math/convolution.hpp` | `O(N log N)`; square uses two transforms | local random, adapter |
+| Math | subset/superset zeta / Mobius / OR・AND convolution | `library/math/subset_transform.hpp` | `O(B 2^B)` time | local differential, adapter |
 | Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
 | Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
 | Data structure | Rollback Union-Find | `library/data_structure/rollback_union_find.hpp` | merge `O(log N)`, undo `O(1)` | local random |
@@ -143,13 +144,34 @@ Lは畳み込みに必要な長さを2の冪へ切り上げた値です。追加
 python tools/bundle.py --entry library/convolution/all.hpp --output convolution_template.cpp
 ```
 
+## 別枠：確率・期待値と行列
+
+`library/probability/all.hpp` と `probability_template.cpp` を追加しています。重複組合せ・多項係数・部分集合変換は通常テンプレートでも使えます。確率・行列の大きな機能は必要なときだけ読み込めます。
+
+| 機能 | ファイル | 計算量・条件 |
+|---|---|---|
+| 独立Bernoulli試行の成功回数分布 | `library/probability/distribution.hpp` | `O(N^2)` 時間、`O(N)` メモリ |
+| 二項分布 | 同上 | 実数 `O(N)`、mod `O(N+log MOD)`。mod版は原則N<MOD |
+| 分布の期待値・分散 | 同上 | `O(N)`、非空・正規化済みの分布 |
+| 自己ループ1個の期待値の式変形 | 同上 | 除算1回、分母0は拒否 |
+| 行列積 / 累乗 | `library/math/matrix.hpp` | 積 `O(NKM)`、S×SのK乗 `O(S^3 log(K+1))` |
+| 連立方程式・mod版 / 実数版 | `library/math/linear_equations.hpp` | n式m変数で `O(nm min(n,m)+m^2)` |
+
+実数版は近似計算です。modの確率・連立方程式には素数の法などの体と、逆元を持つ分母を使ってください。
+[使い方と期待値DPの例集](docs/probability.md) に、コイン、自己ループ、クーポン、循環する状態の期待値、行列遷移をまとめています。
+実行できる例は `examples/probability_expectation.cpp` です。
+
+```bash
+python tools/bundle.py --entry library/probability/all.hpp --output probability_template.cpp
+```
+
 ## 検証
 
 ```bash
 python tools/test.py
 ```
 
-GNU++17/20/23 で全ヘッダーと `verify/`・`examples/` をコンパイルし、`tests/*_test.cpp` を実行します。通常版・畳み込み版の単一ファイルも生成してコンパイルします。ModInt・組合せ・NTT・整数CRTは差分テスト、FFTは許容誤差付きの比較、数え上げは小さな全探索との比較で検証します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
+GNU++17/20/23 で全ヘッダーと `verify/`・`examples/` をコンパイルし、`tests/*_test.cpp` を実行します。通常版・畳み込み版・確率版の単一ファイルも生成してコンパイルします。ModInt・組合せ・NTT・整数CRT・部分集合変換は差分テスト、FFTは許容誤差付きの比較、数え上げ・確率・連立方程式は小さな全探索との比較などで検証します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
 
 ## 注意
 

@@ -6,6 +6,7 @@
 #include "math/montgomery_modint.hpp"
 #include "math/batch_inverse.hpp"
 #include "math/combination.hpp"
+#include "math/subset_transform.hpp"
 #include "math/convolution.hpp"
 #include "math/number_theory.hpp"
 #include "data_structure/union_find.hpp"
