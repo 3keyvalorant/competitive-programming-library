@@ -24,8 +24,11 @@ jobs:
       - run: python tools/test.py
       - name: Check arithmetic and memory on Linux
         run: |
-          "$CXX" -std=c++17 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all tests/modint_test.cpp -o .build/modint-sanitized
-          .build/modint-sanitized
+          for source in tests/modint_test.cpp tests/core_efficiency_test.cpp tests/convolution_square_test.cpp tests/exact_convolution_test.cpp tests/fourier_counting_test.cpp; do
+            binary=".build/$(basename "$source" .cpp)-sanitized"
+            "$CXX" -std=c++17 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all "$source" -o "$binary"
+            "$binary"
+          done
       - name: Benchmark portable modular arithmetic
         run: |
           uname -m

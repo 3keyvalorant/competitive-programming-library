@@ -27,6 +27,29 @@ vector<T> convolution(vector<T> a, vector<T> b){
     int need = a.size() + b.size() - 1, n = 1; while (n < need) n <<= 1; assert((MOD - 1) % n == 0);
     a.resize(n); b.resize(n); ntt<T,PrimitiveRoot>(a, false); ntt<T,PrimitiveRoot>(b, false); for (int i = 0; i < n; ++i) a[i] *= b[i]; ntt<T,PrimitiveRoot>(a, true); a.resize(need); return a;
 }
+
+template<class T, int PrimitiveRoot>
+vector<T> square(vector<T> a){
+    constexpr int MOD = T::mod();
+    if (a.empty()) return {};
+    if (a.size() <= 32){
+        vector<T> c(a.size() * 2 - 1);
+        for (int i = 0; i < (int)a.size(); ++i){
+            c[2 * i] += a[i] * a[i]; T twice = a[i] + a[i];
+            for (int j = i + 1; j < (int)a.size(); ++j) c[i + j] += twice * a[j];
+        }
+        return c;
+    }
+    unsigned int order = MOD - 1;
+    size_t max_transform = order & (0u - order);
+    if (a.size() > (max_transform + 1) / 2) throw length_error("convolution_square exceeds the modulus NTT length");
+    int need = (int)a.size() * 2 - 1, n = 1;
+    while (n < need) n <<= 1;
+    assert((MOD - 1) % n == 0);
+    a.resize(n); ntt<T,PrimitiveRoot>(a, false);
+    for (auto& x : a) x *= x;
+    ntt<T,PrimitiveRoot>(a, true); a.resize(need); return a;
+}
 } // namespace convolution_detail
 
 template<int MOD, int PrimitiveRoot = 3>
@@ -51,5 +74,24 @@ vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
         }
     }
     return convolution_detail::convolution<ModInt<MOD>,PrimitiveRoot>(move(a), move(b));
+}
+
+// Reuses the forward transform: two NTTs instead of three for a*a.
+template<int MOD, int PrimitiveRoot = 3>
+vector<MontgomeryModInt<MOD>> convolution_square(vector<MontgomeryModInt<MOD>> a){
+    return convolution_detail::square<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a));
+}
+template<int MOD, int PrimitiveRoot = 3>
+vector<ModInt<MOD>> convolution_square(vector<ModInt<MOD>> a){
+    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
+        if (a.size() > 32){
+            vector<MontgomeryModInt<MOD>> x(a.size());
+            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
+            auto z = convolution_square<MOD,PrimitiveRoot>(move(x));
+            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
+            return a;
+        }
+    }
+    return convolution_detail::square<ModInt<MOD>,PrimitiveRoot>(move(a));
 }
 

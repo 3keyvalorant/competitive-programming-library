@@ -16,20 +16,29 @@ template<class T> struct combination {
     bool uses_precomputation() const { return table_mode; }
     T small_C(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        r = min(r, n - r);
+        if (!r) return 1;
+        if (r == 1) return T(n);
         if (n < (long long)fact.size()) return fact[n] * ifact[r] * ifact[n - r];
-        r = min(r, n - r); T numerator = 1, denominator = 1;
+        T numerator = 1, denominator = 1;
         for (long long i = 1; i <= r; ++i) numerator *= T(n - r + i), denominator *= T(i);
         return numerator / denominator;
     }
     T get(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        r = min(r, n - r);
+        if (!r) return 1;
+        if (r == 1) return T(n);
         const long long modulus = T::mod(); T res = 1;
-        while (n || r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; res *= small_C(ni, ri); n /= modulus; r /= modulus; }
+        if (n < modulus) return small_C(n, r);
+        while (r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; if (ri) res *= small_C(ni, ri); n /= modulus; r /= modulus; }
         return res;
     }
     T C(long long n, long long r) const { return get(n, r); }
     T permutation(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        if (!r) return 1;
+        if (r == 1) return T(n);
         const long long modulus = T::mod(); if (r >= modulus || (n >= modulus && r > n % modulus)) return 0;
         if (n < (long long)fact.size()) return fact[n] * ifact[n - r];
         T res = 1; for (long long i = 0; i < r; ++i) res *= T(n - i); return res;

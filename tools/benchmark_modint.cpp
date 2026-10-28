@@ -1,5 +1,6 @@
 #include "../library/math/combination.hpp"
 #include "../library/math/convolution.hpp"
+#include "../library/math/batch_inverse.hpp"
 
 // f5c2173 operations, kept here to compare against the immediately previous version.
 template<int MOD> struct BaselineModInt {
@@ -121,6 +122,12 @@ int main(){
         unsigned long long h = 0; for (auto x : v) h = h * 1000003 + x.val(); return h;
     };
     compare_workload("convolution_32768", [&]{ return checksum(baseline_convolution(a, b)); }, [&]{ return checksum(convolution(a, b)); });
+    compare_workload("square_32768", [&]{ return checksum(convolution(a, a)); }, [&]{ return checksum(convolution_square(a)); });
+    vector<mint> units(50000); for (int i = 0; i < (int)units.size(); ++i) units[i] = i + 1;
+    compare_workload("batch_inverse_50000", [&]{
+        vector<mint> result; result.reserve(units.size()); for (auto x : units) result.push_back(x.inv());
+        return checksum(result);
+    }, [&]{ return checksum(batch_inverse(units)); });
     combination<mint> co(1000000000LL);
     compare_workload("large_combination_r50000", []{
         mint r = 1;

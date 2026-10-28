@@ -14,7 +14,8 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Math | ModInt | `library/math/modint.hpp` | `+`, `-`, `*`: `O(1)`; inverse: `O(log MOD)`; power: `O(log exponent)` | local differential |
 | Math | MontgomeryModInt / fastmint / fastamint | `library/math/montgomery_modint.hpp` | arithmetic `O(1)`; inverse `O(log MOD)`; odd `1 < MOD < 2^30` | local differential |
 | Math | adaptive Combination | `library/math/combination.hpp` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r) + log MOD)` per base-`MOD` digit | local random |
-| Math | NTT convolution | `library/math/convolution.hpp` | `O(N log N)` | local random, adapter |
+| Math | batch inverse | `library/math/batch_inverse.hpp` | `O(N + log MOD)`, one inverse | local differential, operation counts |
+| Math | NTT convolution / square | `library/math/convolution.hpp` | `O(N log N)`; square uses two transforms | local random, adapter |
 | Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
 | Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
 | Data structure | Rollback Union-Find | `library/data_structure/rollback_union_find.hpp` | merge `O(log N)`, undo `O(1)` | local random |
@@ -40,6 +41,8 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Algorithm | Mo's algorithm query ordering | `library/algorithm/mo.hpp` | typical `O((N+Q)sqrt(N))` moves | local random |
 
 ## 最小使用例
+
+フーリエ変換・畳み込みによる数え上げは、通常テンプレートと別枠の [追加パック](docs/convolution.md) にまとめています。入口は `library/convolution/all.hpp`、単一ファイル版は `convolution_template.cpp` です。
 
 ```cpp
 #include "library/all.hpp"
@@ -97,7 +100,7 @@ combination<fastmint> co(200000);
 大きな `N` の `combination` は分母をまとめ、1桁あたりの逆元計算を `min(r,n-r)` 回から1回へ削減します。
 
 単発の逆元・入出力・累乗が中心だとMontgomery形式の変換コストで遅くなる場合もあります。用途に合わせて通常型も比較してください。
-再計測用コードは**直前の版 `f5c2173`** と比較し、改善しないケースも含めて出力します。7回の中央値を使い、処理結果の一致も確認します。
+再計測用コードは通常演算・NTT・巨大組合せを版 `f5c2173` と比較し、改善しないケースも含めて出力します。二乗は一般の畳み込み、`batch_inverse` は個別の `inv()` を基準に比較します。7回の中央値を使い、処理結果の一致も確認します。
 
 ```bash
 g++ -std=c++17 -O2 tools/benchmark_modint.cpp -o .build/benchmark_modint
@@ -108,13 +111,45 @@ CIはGitHubのLinux環境（x86-64 / ARM64）でGCC / Clangの両方について
 
 方式の参考: [Peter L. Montgomery, Modular Multiplication Without Trial Division (1985)](https://www.ams.org/journals/mcom/1985-44-170/S0025-5718-1985-0777282-X/S0025-5718-1985-0777282-X.pdf)。
 
+## 環境に依存しにくい処理削減
+
+すべてのCPU・入力で実行時間が必ず短くなる保証はできません。基本型を保ったうえで、処理回数を減らせる場面に専用の操作を用意しています。
+
+| 場面 | 使い方 | 減らす処理 |
+|---|---|---|
+| 複数の逆元 | `batch_inverse(a)` | 逆元N回 → 1回と `3(N-1)` 回の乗算 |
+| 多項式の二乗 | `convolution_square(a)` | NTT3回 → 2回。小さい場合も対称性で乗算を削減 |
+| 組合せの端 | `co.C(n,0)`, `co.C(n,1)` など | 恒等式で直接返し、逆元計算・乗算を省略 |
+| 通常の小さいnの組合せ | `co.C(n,r)` | 不要なLucas分解と高位桁の処理を省略 |
+
+`batch_inverse` は全要素が法と互いに素である必要があります。0や逆元を持たない値は渡さないでください。
+空配列には空配列を返します。これらの操作回数は `tests/core_efficiency_test.cpp` でも確認します。
+
+## 別枠：フーリエ変換・数え上げ
+
+`library/convolution/` に、FFT、整数の正確な畳み込み、任意modの畳み込み、ペアの和・繰り返し選択の数え上げを用意しています。
+通常の `library/all.hpp` には追加せず、必要なときだけ読み込みます。用途・計算量・精度と入力範囲は [使い方と履修メモ](docs/convolution.md) を参照してください。
+
+| 機能 | ファイル | 計算量 |
+|---|---|---|
+| FFT / 実数畳み込み | `library/convolution/fft.hpp` | `O(L log L)` |
+| 整数 / 任意mod畳み込み | `library/convolution/exact.hpp` | `O(L log L)`、NTTを3種類の法で実行 |
+| ペアの和の数え上げ | `library/convolution/counting.hpp` | `O(N+M+L log L)` |
+| K回選択した和の分布 | `library/convolution/counting.hpp` | `O(W+S+L log L log(K+1))`、Wはwaysの長さ |
+
+Lは畳み込みに必要な長さを2の冪へ切り上げた値です。追加パックもローカルの差分テスト対象です。
+
+```bash
+python tools/bundle.py --entry library/convolution/all.hpp --output convolution_template.cpp
+```
+
 ## 検証
 
 ```bash
 python tools/test.py
 ```
 
-GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/random_test.cpp` と `tests/modint_test.cpp` を実行します。ModInt は負数・整数の端の値・合成数の法・`INT_MAX` の法を含む差分テストと、組合せ・NTT畳み込みを検証します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
+GNU++17/20/23 で全ヘッダーと `verify/`・`examples/` をコンパイルし、`tests/*_test.cpp` を実行します。通常版・畳み込み版の単一ファイルも生成してコンパイルします。ModInt・組合せ・NTT・整数CRTは差分テスト、FFTは許容誤差付きの比較、数え上げは小さな全探索との比較で検証します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
 
 ## 注意
 

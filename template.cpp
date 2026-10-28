@@ -228,6 +228,21 @@ public:
 using fastmint = MontgomeryModInt<998244353>;
 using fastamint = MontgomeryModInt<1000000007>;
 
+// Every entry must be invertible; zero/non-unit inputs violate T::inv()'s precondition.
+// Nonempty input: one inverse and 3*(N-1) multiplications; O(N) extra space.
+template<class T> vector<T> batch_inverse(const vector<T>& a){
+    if (a.empty()) return {};
+    vector<T> result(a.size()); result[0] = a[0];
+    for (size_t i = 1; i < a.size(); ++i) result[i] = result[i - 1] * a[i];
+    T inverse = result.back().inv();
+    for (size_t i = a.size() - 1; i > 0; --i){
+        result[i] = inverse * result[i - 1];
+        inverse *= a[i];
+    }
+    result[0] = inverse;
+    return result;
+}
+
 template<class T> struct combination {
     static constexpr int PRECOMPUTE_LIMIT = 2000000;
     vector<T> fact, ifact;
@@ -243,20 +258,29 @@ template<class T> struct combination {
     bool uses_precomputation() const { return table_mode; }
     T small_C(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        r = min(r, n - r);
+        if (!r) return 1;
+        if (r == 1) return T(n);
         if (n < (long long)fact.size()) return fact[n] * ifact[r] * ifact[n - r];
-        r = min(r, n - r); T numerator = 1, denominator = 1;
+        T numerator = 1, denominator = 1;
         for (long long i = 1; i <= r; ++i) numerator *= T(n - r + i), denominator *= T(i);
         return numerator / denominator;
     }
     T get(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        r = min(r, n - r);
+        if (!r) return 1;
+        if (r == 1) return T(n);
         const long long modulus = T::mod(); T res = 1;
-        while (n || r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; res *= small_C(ni, ri); n /= modulus; r /= modulus; }
+        if (n < modulus) return small_C(n, r);
+        while (r){ long long ni = n % modulus, ri = r % modulus; if (ni < ri) return 0; if (ri) res *= small_C(ni, ri); n /= modulus; r /= modulus; }
         return res;
     }
     T C(long long n, long long r) const { return get(n, r); }
     T permutation(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
+        if (!r) return 1;
+        if (r == 1) return T(n);
         const long long modulus = T::mod(); if (r >= modulus || (n >= modulus && r > n % modulus)) return 0;
         if (n < (long long)fact.size()) return fact[n] * ifact[n - r];
         T res = 1; for (long long i = 0; i < r; ++i) res *= T(n - i); return res;
@@ -291,6 +315,29 @@ vector<T> convolution(vector<T> a, vector<T> b){
     int need = a.size() + b.size() - 1, n = 1; while (n < need) n <<= 1; assert((MOD - 1) % n == 0);
     a.resize(n); b.resize(n); ntt<T,PrimitiveRoot>(a, false); ntt<T,PrimitiveRoot>(b, false); for (int i = 0; i < n; ++i) a[i] *= b[i]; ntt<T,PrimitiveRoot>(a, true); a.resize(need); return a;
 }
+
+template<class T, int PrimitiveRoot>
+vector<T> square(vector<T> a){
+    constexpr int MOD = T::mod();
+    if (a.empty()) return {};
+    if (a.size() <= 32){
+        vector<T> c(a.size() * 2 - 1);
+        for (int i = 0; i < (int)a.size(); ++i){
+            c[2 * i] += a[i] * a[i]; T twice = a[i] + a[i];
+            for (int j = i + 1; j < (int)a.size(); ++j) c[i + j] += twice * a[j];
+        }
+        return c;
+    }
+    unsigned int order = MOD - 1;
+    size_t max_transform = order & (0u - order);
+    if (a.size() > (max_transform + 1) / 2) throw length_error("convolution_square exceeds the modulus NTT length");
+    int need = (int)a.size() * 2 - 1, n = 1;
+    while (n < need) n <<= 1;
+    assert((MOD - 1) % n == 0);
+    a.resize(n); ntt<T,PrimitiveRoot>(a, false);
+    for (auto& x : a) x *= x;
+    ntt<T,PrimitiveRoot>(a, true); a.resize(need); return a;
+}
 } // namespace convolution_detail
 
 template<int MOD, int PrimitiveRoot = 3>
@@ -315,6 +362,25 @@ vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
         }
     }
     return convolution_detail::convolution<ModInt<MOD>,PrimitiveRoot>(move(a), move(b));
+}
+
+// Reuses the forward transform: two NTTs instead of three for a*a.
+template<int MOD, int PrimitiveRoot = 3>
+vector<MontgomeryModInt<MOD>> convolution_square(vector<MontgomeryModInt<MOD>> a){
+    return convolution_detail::square<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a));
+}
+template<int MOD, int PrimitiveRoot = 3>
+vector<ModInt<MOD>> convolution_square(vector<ModInt<MOD>> a){
+    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
+        if (a.size() > 32){
+            vector<MontgomeryModInt<MOD>> x(a.size());
+            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
+            auto z = convolution_square<MOD,PrimitiveRoot>(move(x));
+            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
+            return a;
+        }
+    }
+    return convolution_detail::square<ModInt<MOD>,PrimitiveRoot>(move(a));
 }
 
 
