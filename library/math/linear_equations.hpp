@@ -31,7 +31,7 @@ template<class T, bool Real> LinearSolution<T> eliminate(Matrix<T> a, vector<T> 
     }
     vector<int> where(m, -1);
     LinearSolution<T> result;
-    for (int column = 0; column < m && result.rank < n; ++column){
+    for (int column = 0; column < m && (result.rank) < n; ++column){
         int row = result.rank, pivot = row;
         if constexpr (Real){
             for (int i = row + 1; i < n; ++i) if (fabsl(a[i][column]) > fabsl(a[pivot][column])) pivot = i;
