@@ -1,12 +1,40 @@
 name: CI
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            cxx: g++
+          - compiler: clang
+            cxx: clang++
+    env:
+      CXX: ${{ matrix.cxx }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - run: python tools/test.py
+      - name: Check arithmetic and memory on Linux
+        run: |
+          "$CXX" -std=c++17 -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all tests/modint_test.cpp -o .build/modint-sanitized
+          .build/modint-sanitized
+      - name: Benchmark portable modular arithmetic
+        run: |
+          uname -m
+          lscpu
+          "$CXX" --version
+          "$CXX" -std=c++17 -O2 -Wall -Wextra tools/benchmark_modint.cpp -o .build/benchmark_modint
+          .build/benchmark_modint | tee .build/benchmark-modint.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ matrix.os }}-${{ matrix.compiler }}
+          path: .build/benchmark-modint.csv
 

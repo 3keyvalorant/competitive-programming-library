@@ -3,6 +3,7 @@
 #include "basic/convenience.hpp"
 #include "basic/prefix_sum.hpp"
 #include "math/modint.hpp"
+#include "math/montgomery_modint.hpp"
 #include "math/combination.hpp"
 #include "math/convolution.hpp"
 #include "math/number_theory.hpp"

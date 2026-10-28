@@ -17,9 +17,9 @@ template<class T> struct combination {
     T small_C(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
         if (n < (long long)fact.size()) return fact[n] * ifact[r] * ifact[n - r];
-        r = min(r, n - r); T res = 1;
-        for (long long i = 1; i <= r; ++i) res *= T(n - r + i), res /= T(i);
-        return res;
+        r = min(r, n - r); T numerator = 1, denominator = 1;
+        for (long long i = 1; i <= r; ++i) numerator *= T(n - r + i), denominator *= T(i);
+        return numerator / denominator;
     }
     T get(long long n, long long r) const {
         if (r < 0 || n < r) return 0;
