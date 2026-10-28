@@ -150,16 +150,23 @@ template<class T> void rotate_grid(vector<vector<T>>& a, bool counterclockwise =
 }
 
 template<int MOD> struct ModInt {
+    static_assert(MOD > 0);
     int v;
     ModInt(long long x = 0) : v((int)(x % MOD)){ if (v < 0) v += MOD; }
     static constexpr int mod(){ return MOD; }
     int val() const { return v; }
-    ModInt& operator+=(const ModInt& o){ if ((v += o.v) >= MOD) v -= MOD; return *this; }
+    ModInt& operator+=(const ModInt& o){ unsigned int sum = (unsigned int)v + o.v; v = sum >= MOD ? sum - MOD : sum; return *this; }
     ModInt& operator-=(const ModInt& o){ if ((v -= o.v) < 0) v += MOD; return *this; }
-    ModInt& operator*=(const ModInt& o){ v = (int)((long long)v * o.v % MOD); return *this; }
+    ModInt& operator*=(const ModInt& o){ v = (unsigned long long)(unsigned int)v * (unsigned int)o.v % MOD; return *this; }
     ModInt& operator/=(const ModInt& o){ return *this *= o.inv(); }
     ModInt pow(long long n) const { assert(n >= 0); ModInt a = *this, r = 1; while (n){ if (n & 1) r *= a; a *= a; n >>= 1; } return r; }
-    ModInt inv() const { long long a = v, b = MOD, x = 1, y = 0; while (b){ long long q = a / b; a -= q * b; swap(a, b); x -= q * y; swap(x, y); } assert(a == 1); return ModInt(x); }
+    ModInt inv() const {
+        int a = v, b = MOD; long long x = 1, y = 0;
+        while (b){ int q = a / b; a -= q * b; swap(a, b); x -= q * y; swap(x, y); }
+        assert(a == 1);
+        // Euclid's coefficient is in (-MOD, MOD), so no remainder is needed.
+        ModInt res; res.v = x < 0 ? x + MOD : x; return res;
+    }
     friend ModInt operator+(ModInt a, const ModInt& b){ return a += b; }
     friend ModInt operator-(ModInt a, const ModInt& b){ return a -= b; }
     friend ModInt operator*(ModInt a, const ModInt& b){ return a *= b; }

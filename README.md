@@ -11,7 +11,8 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Basic | helpers / compression | `library/basic/base.hpp` | compression `O(N log N)` | local |
 | Basic | input/output / graph reader / container shortcuts | `library/basic/convenience.hpp` | mostly `O(N)` wrappers | local |
 | Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
-| Math | ModInt / adaptive Combination | `library/math/` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r))` per base-`MOD` digit | local random |
+| Math | ModInt | `library/math/modint.hpp` | `+`, `-`, `*`: `O(1)`; inverse: `O(log MOD)`; power: `O(log exponent)` | local differential |
+| Math | adaptive Combination | `library/math/combination.hpp` | small `N`: build `O(N)`, query `O(1)`; large `N`: query `O(min(r,n-r))` per base-`MOD` digit | local random |
 | Math | NTT convolution | `library/math/convolution.hpp` | `O(N log N)` | local random, adapter |
 | Math | sieve / factorization / extgcd / CRT / integer sqrt | `library/math/number_theory.hpp` | sieve `O(N log log N)`, factorization `O(sqrt N)` | local |
 | Data structure | Union-Find / Weighted Union-Find | `library/data_structure/union_find.hpp` | amortized `O(alpha(N))` | local, adapter |
@@ -74,13 +75,33 @@ rep(k, 4){ int ni = i + tate[k], nj = j + yoko[k]; }
 Yes;                     // both `Yes;` and `Yes();` are supported
 ```
 
+## ModInt の高速化
+
+`mint`、`amint`、`ModInt<MOD>` の使い方と、`v` / `val()` が通常の剰余を返す仕様はそのままです。
+乗算は符号なし64bit演算、逆元は32bitの除算を使い、逆元の最後の不要な剰余計算も省きます。
+法は `1 <= MOD <= INT_MAX`。加算もこの範囲でオーバーフローしません。逆元・除算は法と互いに素な値に対して使ってください。
+
+Windows / GCC 13.2 / `-O2`、7回の中央値で旧実装と比較した参考値です。実際の速度はCPU・コンパイラ・処理内容に依存します。
+
+| 法 | 乗算のみ | 逆元 | 乗算＋加算 |
+|---|---:|---:|---:|
+| 998244353 | 1.08倍 | 1.27倍 | ほぼ同じ |
+| 1000000007 | 1.16倍 | 1.22倍 | 1.04倍 |
+
+再計測用コードには旧実装を残し、処理結果の一致も確認します。乗算と乗算＋加算は各1,000万回、逆元は40万回です。
+
+```bash
+g++ -std=c++17 -O2 tools/benchmark_modint.cpp -o .build/benchmark_modint
+.build/benchmark_modint
+```
+
 ## 検証
 
 ```bash
 python tools/test.py
 ```
 
-GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/random_test.cpp` を実行します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
+GNU++17/20/23 で全ヘッダーと `verify/` をコンパイルし、`tests/random_test.cpp` と `tests/modint_test.cpp` を実行します。ModInt は負数・整数の端の値・合成数の法・`INT_MAX` の法を含む差分テストと、組合せ・NTT畳み込みを検証します。CIも同じコマンドを使用します。Library Checkerアダプタは `verify/` にありますが、オンラインjudgeへ未提出のため「Library Checker verified」とは表記していません。
 
 ## 注意
 
