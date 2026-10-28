@@ -44,7 +44,7 @@ template<class T> void check_distributions(){
 }
 
 int main(){
-    check_distributions<mint>(); check_distributions<fastmint>();
+    check_distributions<mint>(); check_distributions<BasicModInt<998244353>>();
     check_distributions<long double>(); check_distributions<double>();
     auto broad = cp_probability::binomial_distribution(10000, 0.5L);
     assert(broad[5000] > 0 && close_value(expectation(broad), 5000.0L) && close_value(variance(broad), 2500.0L));

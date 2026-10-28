@@ -15,7 +15,7 @@ template<class T, int Root = 3> void check_square(){
     }
 }
 int main(){
-    check_square<mint>(); check_square<fastmint>();
+    check_square<mint>(); check_square<BasicModInt<998244353>>();
     check_square<ModInt<167772161>>(); check_square<ModInt<2013265921>,31>();
     bool caught = false;
     try { convolution_square(vector<ModInt<17>>(33)); } catch (const length_error&) { caught = true; }

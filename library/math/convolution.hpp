@@ -1,5 +1,5 @@
 #pragma once
-#include "montgomery_modint.hpp"
+#include "modint.hpp"
 
 namespace convolution_detail {
 template<class T, int PrimitiveRoot>
@@ -52,46 +52,17 @@ vector<T> square(vector<T> a){
 }
 } // namespace convolution_detail
 
-template<int MOD, int PrimitiveRoot = 3>
-void ntt(vector<ModInt<MOD>>& a, bool inverse){ convolution_detail::ntt<ModInt<MOD>,PrimitiveRoot>(a, inverse); }
-template<int MOD, int PrimitiveRoot = 3>
-void ntt(vector<MontgomeryModInt<MOD>>& a, bool inverse){ convolution_detail::ntt<MontgomeryModInt<MOD>,PrimitiveRoot>(a, inverse); }
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+void ntt(vector<ModInt<MOD,Fast>>& a, bool inverse){ convolution_detail::ntt<ModInt<MOD,Fast>,PrimitiveRoot>(a, inverse); }
 
-template<int MOD, int PrimitiveRoot = 3>
-vector<MontgomeryModInt<MOD>> convolution(vector<MontgomeryModInt<MOD>> a, vector<MontgomeryModInt<MOD>> b){
-    return convolution_detail::convolution<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a), move(b));
-}
-template<int MOD, int PrimitiveRoot = 3>
-vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
-    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
-        if (min(a.size(), b.size()) > 32){
-            vector<MontgomeryModInt<MOD>> x(a.size()), y(b.size());
-            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
-            for (int i = 0; i < (int)b.size(); ++i) y[i] = MontgomeryModInt<MOD>::raw(b[i].val());
-            auto z = convolution<MOD,PrimitiveRoot>(move(x), move(y));
-            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
-            return a;
-        }
-    }
-    return convolution_detail::convolution<ModInt<MOD>,PrimitiveRoot>(move(a), move(b));
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+vector<ModInt<MOD,Fast>> convolution(vector<ModInt<MOD,Fast>> a, vector<ModInt<MOD,Fast>> b){
+    return convolution_detail::convolution<ModInt<MOD,Fast>,PrimitiveRoot>(move(a), move(b));
 }
 
 // Reuses the forward transform: two NTTs instead of three for a*a.
-template<int MOD, int PrimitiveRoot = 3>
-vector<MontgomeryModInt<MOD>> convolution_square(vector<MontgomeryModInt<MOD>> a){
-    return convolution_detail::square<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a));
-}
-template<int MOD, int PrimitiveRoot = 3>
-vector<ModInt<MOD>> convolution_square(vector<ModInt<MOD>> a){
-    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
-        if (a.size() > 32){
-            vector<MontgomeryModInt<MOD>> x(a.size());
-            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
-            auto z = convolution_square<MOD,PrimitiveRoot>(move(x));
-            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
-            return a;
-        }
-    }
-    return convolution_detail::square<ModInt<MOD>,PrimitiveRoot>(move(a));
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+vector<ModInt<MOD,Fast>> convolution_square(vector<ModInt<MOD,Fast>> a){
+    return convolution_detail::square<ModInt<MOD,Fast>,PrimitiveRoot>(move(a));
 }
 

@@ -2,13 +2,17 @@
 #include "../library/math/convolution.hpp"
 #include "../library/math/batch_inverse.hpp"
 
-// f5c2173 operations, kept here to compare against the immediately previous version.
+// Frozen canonical operations from f5c2173; never inherit the new mint backend.
 template<int MOD> struct BaselineModInt {
     int v;
     BaselineModInt(long long x = 0) : v((int)(x % MOD)){ if (v < 0) v += MOD; }
     int val() const { return v; }
     BaselineModInt& operator+=(const BaselineModInt& o){ unsigned int sum = (unsigned int)v + o.v; v = sum >= MOD ? sum - MOD : sum; return *this; }
+    BaselineModInt& operator-=(const BaselineModInt& o){ if ((v -= o.v) < 0) v += MOD; return *this; }
     BaselineModInt& operator*=(const BaselineModInt& o){ v = (unsigned long long)(unsigned int)v * (unsigned int)o.v % MOD; return *this; }
+    friend BaselineModInt operator+(BaselineModInt a, const BaselineModInt& b){ return a += b; }
+    friend BaselineModInt operator-(BaselineModInt a, const BaselineModInt& b){ return a -= b; }
+    friend BaselineModInt operator*(BaselineModInt a, const BaselineModInt& b){ return a *= b; }
     BaselineModInt pow(long long n) const {
         BaselineModInt a = *this, r = 1;
         while (n){ if (n & 1) r *= a; a *= a; n >>= 1; } return r;
@@ -41,24 +45,24 @@ template<class T, int Task> Measurement measure(const vector<T>& data){
 
 template<int MOD, int Task> void compare(const char* name){
     vector<BaselineModInt<MOD>> old_data(4096);
-    vector<MontgomeryModInt<MOD>> new_data(4096);
+    vector<ModInt<MOD>> new_data(4096);
     mt19937 rng(20261028);
     for (int i = 0; i < 4096; ++i){
         int value = 1 + rng() % (MOD - 1);
         old_data[i] = value; new_data[i] = value;
     }
     auto warm_old = measure<BaselineModInt<MOD>, Task>(old_data);
-    auto warm_new = measure<MontgomeryModInt<MOD>, Task>(new_data);
+    auto warm_new = measure<ModInt<MOD>, Task>(new_data);
     assert(warm_old.checksum == warm_new.checksum);
     vector<double> old_times, new_times;
     for (int trial = 0; trial < 7; ++trial){
         Measurement old_result, new_result;
         if (trial & 1){
-            new_result = measure<MontgomeryModInt<MOD>, Task>(new_data);
+            new_result = measure<ModInt<MOD>, Task>(new_data);
             old_result = measure<BaselineModInt<MOD>, Task>(old_data);
         } else {
             old_result = measure<BaselineModInt<MOD>, Task>(old_data);
-            new_result = measure<MontgomeryModInt<MOD>, Task>(new_data);
+            new_result = measure<ModInt<MOD>, Task>(new_data);
         }
         if (old_result.checksum != new_result.checksum) throw runtime_error("checksum mismatch");
         old_times.push_back(old_result.ms); new_times.push_back(new_result.ms);
@@ -69,19 +73,20 @@ template<int MOD, int Task> void compare(const char* name){
 }
 
 // The previous transform deliberately recomputes twiddles inside every block.
-void baseline_ntt(vector<mint>& a, bool inverse){
+using baseline_mint = BaselineModInt<998244353>;
+void baseline_ntt(vector<baseline_mint>& a, bool inverse){
     int n = a.size();
     for (int i = 1, j = 0; i < n; ++i){
         int bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;
         if (i < j) swap(a[i], a[j]);
     }
     for (int len = 2; len <= n; len <<= 1){
-        mint root = mint(3).pow((mint::mod() - 1) / len); if (inverse) root = root.inv();
-        for (int i = 0; i < n; i += len){ mint w = 1; for (int j = 0; j < len / 2; ++j){ auto u = a[i+j], v = a[i+j+len/2] * w; a[i+j] = u + v; a[i+j+len/2] = u - v; w *= root; } }
+        baseline_mint root = baseline_mint(3).pow((998244353 - 1) / len); if (inverse) root = root.inv();
+        for (int i = 0; i < n; i += len){ baseline_mint w = 1; for (int j = 0; j < len / 2; ++j){ auto u = a[i+j], v = a[i+j+len/2] * w; a[i+j] = u + v; a[i+j+len/2] = u - v; w *= root; } }
     }
-    if (inverse){ mint inv_n = mint(n).inv(); for (auto& x : a) x *= inv_n; }
+    if (inverse){ baseline_mint inv_n = baseline_mint(n).inv(); for (auto& x : a) x *= inv_n; }
 }
-vector<mint> baseline_convolution(vector<mint> a, vector<mint> b){
+vector<baseline_mint> baseline_convolution(vector<baseline_mint> a, vector<baseline_mint> b){
     int need = a.size() + b.size() - 1, n = 1; while (n < need) n <<= 1;
     a.resize(n); b.resize(n); baseline_ntt(a, false); baseline_ntt(b, false);
     for (int i = 0; i < n; ++i) a[i] *= b[i];
@@ -116,12 +121,16 @@ int main(){
     vector<mint> a(1 << 15), b(1 << 15); mt19937 rng(20261028);
     for (auto& x : a) x = rng();
     for (auto& x : b) x = rng();
-    auto reference = baseline_convolution(a, b);
-    if (convolution(a, b) != reference) throw runtime_error("convolution mismatch");
-    auto checksum = [](const vector<mint>& v){
+    vector<baseline_mint> old_a(a.size()), old_b(b.size());
+    for (size_t i = 0; i < a.size(); ++i) old_a[i] = a[i].val();
+    for (size_t i = 0; i < b.size(); ++i) old_b[i] = b[i].val();
+    auto reference = baseline_convolution(old_a, old_b); auto actual = convolution(a, b);
+    if (actual.size() != reference.size()) throw runtime_error("convolution size mismatch");
+    for (size_t i = 0; i < actual.size(); ++i) if (actual[i].val() != reference[i].val()) throw runtime_error("convolution mismatch");
+    auto checksum = [](const auto& v){
         unsigned long long h = 0; for (auto x : v) h = h * 1000003 + x.val(); return h;
     };
-    compare_workload("convolution_32768", [&]{ return checksum(baseline_convolution(a, b)); }, [&]{ return checksum(convolution(a, b)); });
+    compare_workload("convolution_32768", [&]{ return checksum(baseline_convolution(old_a, old_b)); }, [&]{ return checksum(convolution(a, b)); });
     compare_workload("square_32768", [&]{ return checksum(convolution(a, a)); }, [&]{ return checksum(convolution_square(a)); });
     vector<mint> units(50000); for (int i = 0; i < (int)units.size(); ++i) units[i] = i + 1;
     compare_workload("batch_inverse_50000", [&]{
@@ -130,8 +139,8 @@ int main(){
     }, [&]{ return checksum(batch_inverse(units)); });
     combination<mint> co(1000000000LL);
     compare_workload("large_combination_r50000", []{
-        mint r = 1;
-        for (int i = 1; i <= 50000; ++i){ r *= mint(1000000000LL - 50000 + i); r /= mint(i); }
+        baseline_mint r = 1;
+        for (int i = 1; i <= 50000; ++i){ r *= baseline_mint(1000000000LL - 50000 + i); r *= baseline_mint(i).inv(); }
         return r.val();
     }, [&]{ return co.C(1000000000LL, 50000).val(); });
 }

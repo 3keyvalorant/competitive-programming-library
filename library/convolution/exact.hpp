@@ -16,11 +16,11 @@ inline size_t output_size(size_t n, size_t m){
     return n + m - 1;
 }
 template<int MOD> vector<int> residue_convolution(const vector<long long>& a, const vector<long long>& b){
-    vector<MontgomeryModInt<MOD>> x(a.size()), z;
+    vector<ModInt<MOD>> x(a.size()), z;
     for (size_t i = 0; i < a.size(); ++i) x[i] = a[i];
     if (&a == &b) z = ::convolution_square<MOD, MOD == P3 ? 11 : 3>(move(x));
     else {
-        vector<MontgomeryModInt<MOD>> y(b.size());
+        vector<ModInt<MOD>> y(b.size());
         for (size_t i = 0; i < b.size(); ++i) y[i] = b[i];
         z = ::convolution<MOD, MOD == P3 ? 11 : 3>(move(x), move(y));
     }

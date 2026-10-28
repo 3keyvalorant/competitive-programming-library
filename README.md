@@ -11,8 +11,7 @@ AtCoder / Codeforces にそのまま提出できる GNU++17 競技プログラ�
 | Basic | helpers / compression | `library/basic/base.hpp` | compression `O(N log N)` | local |
 | Basic | input/output / graph reader / container shortcuts | `library/basic/convenience.hpp` | mostly `O(N)` wrappers | local |
 | Basic | 1D/2D prefix sum / grid rotate | `library/basic/prefix_sum.hpp` | build `O(HW)`, query `O(1)` | local, adapter |
-| Math | ModInt | `library/math/modint.hpp` | `+`, `-`, `*`: `O(1)`; inverse: `O(log MOD)`; power: `O(log exponent)` | local differential |
-| Math | MontgomeryModInt / fastmint / fastamint | `library/math/montgomery_modint.hpp` | arithmetic `O(1)`; inverse `O(log MOD)`; odd `1 < MOD < 2^30` | local differential |
+| Math | ModInt (Montgomery default / basic fallback) | `library/math/modint.hpp` | `+`, `-`, `*`: `O(1)`; inverse: `O(log MOD)`; power: `O(log exponent)` | local differential, migration tests |
 | Math | adaptive Combination / H / multinomial | `library/math/combination.hpp` | tables: build `O(N)`, C/H `O(1)`, K-group multinomial `O(K)`; large values: C via Lucas/products | local random |
 | Math | batch inverse | `library/math/batch_inverse.hpp` | `O(N + log MOD)`, one inverse | local differential, operation counts |
 | Math | NTT convolution / square | `library/math/convolution.hpp` | `O(N log N)`; square uses two transforms | local random, adapter |
@@ -80,27 +79,43 @@ rep(k, 4){ int ni = i + tate[k], nj = j + yoko[k]; }
 Yes;                     // both `Yes;` and `Yes();` are supported
 ```
 
-## ModInt の高速化
+## ModInt：高速版を標準化
 
-`mint`、`amint`、`ModInt<MOD>` の使い方と、`v` / `val()` が通常の剰余を返す仕様はそのままです。
-乗算は符号なし64bit演算、逆元は32bitの除算を使い、逆元の最後の不要な剰余計算も省きます。
-法は `1 <= MOD <= INT_MAX`。加算もこの範囲でオーバーフローしません。逆元・除算は法と互いに素な値に対して使ってください。
+`mint`・`amint` は既定でMontgomery形式を使います。`fastmint`・`fastamint` は、それぞれと同じ型を指す互換名になりました。
+`+ - * /`、比較、`val()`、`mod()`、`pow()`、`inv()`、入出力の使い方は従来どおりです。
 
-乗算を繰り返す計算向けに `MontgomeryModInt<MOD>`、`fastmint`、`fastamint` も使えます。
+`ModInt<MOD>` は法が奇数かつ `1 < MOD < 2^30` ならMontgomery、それ以外は通常の剰余計算をコンパイル時に選びます。
+偶数の法や `2013265921` のような大きい法も、引き続き使えます。全体の対応範囲は `1 <= MOD <= INT_MAX` です。
 通常の32/64bit整数演算だけを使い、CPU固有命令・インラインアセンブリ・`-march=native` に依存しません。
-法は奇数かつ `1 < MOD < 2^30`。内部表現を変えているので値は `.val()` で取得します。公開メンバー `.v` が必要なら従来の `mint` / `amint` を使ってください。
+
+| 型・名前 | 動作 |
+|---|---|
+| `mint` / `amint` | 998244353 / 1000000007、Montgomery形式 |
+| `fastmint` / `fastamint` | `mint` / `amint` と同じ型 |
+| `BasicModInt<MOD>` | 通常の剰余計算を明示的に選ぶ |
+| `MontgomeryModInt<MOD>` | Montgomery形式を明示。奇数かつ `1 < MOD < 2^30` が必要 |
+
+移行時は次の点に注意してください。
+
+- 公開メンバー `.v` は廃止しました。値は常に `.val()` で取得してください。内部表現を直接読み書きできません。
+- `mint` と `fastmint` は同じ型なので、それぞれに別の関数オーバーロードを定義していた場合は統合が必要です。
+- 整数コンストラクタの入力範囲は `long long` です。ACLなど他実装との完全なAPI互換は保証しません。
+- `raw(v)` は `0 <= v < MOD` の通常の剰余を受け取り、内部形式へ変換します。逆元・除算には法と互いに素な値を使ってください。
+
+以前の `math/montgomery_modint.hpp` は互換用のincludeだけを残し、実装は `math/modint.hpp` に統合しました。
 
 ```cpp
-fastmint answer = 1;
+mint answer = 1; // これだけで高速版
 for (int i = 1; i <= n; ++i) answer *= i;
 cout << answer.val() << '\n';
-combination<fastmint> co(200000);
+combination<mint> co(200000);
 ```
 
-`convolution(vector<mint>, vector<mint>)` は適用可能な法でMontgomery形式を自動利用し、戻り値の型はそのままです。NTTの回転因子も段ごとに再利用して乗算回数を削減します。NTTの追加メモリは `O(N)` です。
+`convolution(vector<mint>, vector<mint>)` は既定型をそのまま使い、通常型との変換や複製を省きます。`convolution<MOD,Root>(a,b)` の明示呼び出しも維持しています。
+NTTの回転因子も段ごとに再利用して乗算回数を削減します。NTTの追加メモリは `O(N)` です。
 大きな `N` の `combination` は分母をまとめ、1桁あたりの逆元計算を `min(r,n-r)` 回から1回へ削減します。
 
-単発の逆元・入出力・累乗が中心だとMontgomery形式の変換コストで遅くなる場合もあります。用途に合わせて通常型も比較してください。
+単発の逆元・入出力・累乗が中心だとMontgomery形式の変換コストで遅くなる場合もあります。その場合は `BasicModInt<MOD>` と比較できます。
 再計測用コードは通常演算・NTT・巨大組合せを版 `f5c2173` と比較し、改善しないケースも含めて出力します。二乗は一般の畳み込み、`batch_inverse` は個別の `inv()` を基準に比較します。7回の中央値を使い、処理結果の一致も確認します。
 
 ```bash
@@ -114,7 +129,7 @@ CIはGitHubのLinux環境（x86-64 / ARM64）でGCC / Clangの両方について
 
 ## 環境に依存しにくい処理削減
 
-すべてのCPU・入力で実行時間が必ず短くなる保証はできません。基本型を保ったうえで、処理回数を減らせる場面に専用の操作を用意しています。
+すべてのCPU・入力で実行時間が必ず短くなる保証はできません。通常の演算APIを保ったうえで、処理回数を減らせる場面に専用の操作を用意しています。
 
 | 場面 | 使い方 | 減らす処理 |
 |---|---|---|

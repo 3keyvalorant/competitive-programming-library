@@ -56,8 +56,8 @@ int main(){
     check_modint<mint>(); check_modint<amint>();
     check_modint<ModInt<1073741824>>(); check_modint<ModInt<2147483646>>(); check_modint<ModInt<INT_MAX>>();
     check_modint<MontgomeryModInt<3>>(); check_modint<MontgomeryModInt<7>>(); check_modint<MontgomeryModInt<9>>();
-    check_modint<fastmint>(); check_modint<fastamint>(); check_modint<MontgomeryModInt<1073741823>>();
-    assert(mint(-1).v == mint::mod() - 1);
+    check_modint<BasicModInt<998244353>>(); check_modint<BasicModInt<1000000007>>(); check_modint<MontgomeryModInt<1073741823>>();
+    assert(mint(-1).val() == mint::mod() - 1);
     combination<mint> co(1000);
     vector<long long> row(1002); row[0] = 1;
     for (int n = 0; n <= 1000; ++n){

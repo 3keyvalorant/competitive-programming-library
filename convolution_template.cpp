@@ -101,84 +101,76 @@ inline vector<long double> convolution_real(const vector<long double>& a, const 
 }
 } // namespace cp_transform
 
-template<int MOD> struct ModInt {
-    static_assert(MOD > 0);
-    int v;
-    ModInt(long long x = 0) : v((int)(x % MOD)){ if (v < 0) v += MOD; }
-    static constexpr int mod(){ return MOD; }
-    int val() const { return v; }
-    ModInt& operator+=(const ModInt& o){ unsigned int sum = (unsigned int)v + o.v; v = sum >= MOD ? sum - MOD : sum; return *this; }
-    ModInt& operator-=(const ModInt& o){ if ((v -= o.v) < 0) v += MOD; return *this; }
-    ModInt& operator*=(const ModInt& o){ v = (unsigned long long)(unsigned int)v * (unsigned int)o.v % MOD; return *this; }
-    ModInt& operator/=(const ModInt& o){ return *this *= o.inv(); }
-    ModInt pow(long long n) const { assert(n >= 0); ModInt a = *this, r = 1; while (n){ if (n & 1) r *= a; a *= a; n >>= 1; } return r; }
-    ModInt inv() const {
-        int a = v, b = MOD; long long x = 1, y = 0;
-        while (b){ int q = a / b; a -= q * b; swap(a, b); x -= q * y; swap(x, y); }
-        assert(a == 1);
-        // Euclid's coefficient is in (-MOD, MOD), so no remainder is needed.
-        ModInt res; res.v = x < 0 ? x + MOD : x; return res;
-    }
-    friend ModInt operator+(ModInt a, const ModInt& b){ return a += b; }
-    friend ModInt operator-(ModInt a, const ModInt& b){ return a -= b; }
-    friend ModInt operator*(ModInt a, const ModInt& b){ return a *= b; }
-    friend ModInt operator/(ModInt a, const ModInt& b){ return a /= b; }
-    friend bool operator==(const ModInt& a, const ModInt& b){ return a.v == b.v; }
-    friend bool operator!=(const ModInt& a, const ModInt& b){ return !(a == b); }
-    friend ostream& operator<<(ostream& os, const ModInt& x){ return os << x.v; }
-    friend istream& operator>>(istream& is, ModInt& x){ long long v; is >> v; x = ModInt(v); return is; }
-};
-using mint = ModInt<998244353>;
-using amint = ModInt<1000000007>;
-
-
-template<int MOD> class MontgomeryModInt {
-    static_assert(MOD > 1 && MOD < (1 << 30) && (MOD & 1), "MontgomeryModInt requires odd 1 < MOD < 2^30");
+template<int MOD, bool UseMontgomery = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+class ModInt {
+    static_assert(MOD > 0, "ModInt requires a positive modulus");
+    static_assert(!UseMontgomery || (MOD > 1 && MOD < (1 << 30) && (MOD & 1)), "Montgomery requires odd 1 < MOD < 2^30");
     using u32 = uint32_t;
     using u64 = uint64_t;
     u32 x = 0;
+    static constexpr u32 RANGE = UseMontgomery ? 2u * MOD : (u32)MOD;
     static constexpr u32 negative_inverse(){
         u32 r = MOD;
         for (int i = 0; i < 5; ++i) r *= 2u - (u32)MOD * r;
         return 0u - r;
     }
     static constexpr u32 R2 = (0ull - (u64)MOD) % MOD;
-    // x stays in [0, 2*MOD); MOD < 2^30 keeps products below MOD*2^32.
+    // Lazy Montgomery residues stay in [0,2*MOD); the fallback stays in [0,MOD).
     static u32 reduce(u64 t){ return (t + (u64)(u32)((u32)t * negative_inverse()) * MOD) >> 32; }
 public:
-    MontgomeryModInt() = default;
-    MontgomeryModInt(long long value){
+    ModInt() = default;
+    ModInt(long long value){
         long long r = value % MOD; if (r < 0) r += MOD;
-        x = reduce((u64)r * R2);
+        if constexpr (UseMontgomery) x = reduce((u64)r * R2);
+        else x = (u32)r;
     }
     static constexpr int mod(){ return MOD; }
-    static MontgomeryModInt raw(int value){
+    static ModInt raw(int value){
         assert(0 <= value && value < MOD);
-        MontgomeryModInt r; r.x = reduce((u64)value * R2); return r;
+        ModInt r;
+        if constexpr (UseMontgomery) r.x = reduce((u64)value * R2);
+        else r.x = (u32)value;
+        return r;
     }
-    int val() const { u32 r = reduce(x); return r >= MOD ? r - MOD : r; }
-    MontgomeryModInt& operator+=(const MontgomeryModInt& o){ x += o.x; if (x >= 2u * MOD) x -= 2u * MOD; return *this; }
-    MontgomeryModInt& operator-=(const MontgomeryModInt& o){ x += 2u * MOD - o.x; if (x >= 2u * MOD) x -= 2u * MOD; return *this; }
-    MontgomeryModInt& operator*=(const MontgomeryModInt& o){ x = reduce((u64)x * o.x); return *this; }
-    MontgomeryModInt& operator/=(const MontgomeryModInt& o){ return *this *= o.inv(); }
-    MontgomeryModInt pow(long long n) const {
-        assert(n >= 0); MontgomeryModInt a = *this, r = 1;
-        while (n){ if (n & 1) r *= a; a *= a; n >>= 1; } return r;
+    int val() const {
+        if constexpr (UseMontgomery){ u32 r = reduce(x); return r >= MOD ? r - MOD : r; }
+        else return x;
     }
-    MontgomeryModInt inv() const { return raw(ModInt<MOD>(val()).inv().val()); }
-    friend MontgomeryModInt operator+(MontgomeryModInt a, const MontgomeryModInt& b){ return a += b; }
-    friend MontgomeryModInt operator-(MontgomeryModInt a, const MontgomeryModInt& b){ return a -= b; }
-    friend MontgomeryModInt operator*(MontgomeryModInt a, const MontgomeryModInt& b){ return a *= b; }
-    friend MontgomeryModInt operator/(MontgomeryModInt a, const MontgomeryModInt& b){ return a /= b; }
-    friend bool operator==(const MontgomeryModInt& a, const MontgomeryModInt& b){
-        return (a.x >= MOD ? a.x - MOD : a.x) == (b.x >= MOD ? b.x - MOD : b.x);
+    ModInt& operator+=(const ModInt& o){ x += o.x; if (x >= RANGE) x -= RANGE; return *this; }
+    ModInt& operator-=(const ModInt& o){ x += RANGE - o.x; if (x >= RANGE) x -= RANGE; return *this; }
+    ModInt& operator*=(const ModInt& o){
+        if constexpr (UseMontgomery) x = reduce((u64)x * o.x);
+        else x = (u64)x * o.x % MOD;
+        return *this;
     }
-    friend bool operator!=(const MontgomeryModInt& a, const MontgomeryModInt& b){ return !(a == b); }
-    friend ostream& operator<<(ostream& os, const MontgomeryModInt& a){ return os << a.val(); }
-    friend istream& operator>>(istream& is, MontgomeryModInt& a){ long long value; if (is >> value) a = MontgomeryModInt(value); return is; }
+    ModInt& operator/=(const ModInt& o){ return *this *= o.inv(); }
+    ModInt pow(long long n) const { assert(n >= 0); ModInt a = *this, r = 1; while (n){ if (n & 1) r *= a; a *= a; n >>= 1; } return r; }
+    ModInt inv() const {
+        int a = val(), b = MOD; long long coefficient = 1, next = 0;
+        while (b){ int q = a / b; a -= q * b; swap(a, b); coefficient -= q * next; swap(coefficient, next); }
+        assert(a == 1);
+        // Euclid's coefficient is in (-MOD, MOD), so no remainder is needed.
+        return raw((int)(coefficient < 0 ? coefficient + MOD : coefficient));
+    }
+    friend ModInt operator+(ModInt a, const ModInt& b){ return a += b; }
+    friend ModInt operator-(ModInt a, const ModInt& b){ return a -= b; }
+    friend ModInt operator*(ModInt a, const ModInt& b){ return a *= b; }
+    friend ModInt operator/(ModInt a, const ModInt& b){ return a /= b; }
+    friend bool operator==(const ModInt& a, const ModInt& b){
+        if constexpr (UseMontgomery) return (a.x >= MOD ? a.x - MOD : a.x) == (b.x >= MOD ? b.x - MOD : b.x);
+        else return a.x == b.x;
+    }
+    friend bool operator!=(const ModInt& a, const ModInt& b){ return !(a == b); }
+    friend ostream& operator<<(ostream& os, const ModInt& x){ return os << x.val(); }
+    friend istream& operator>>(istream& is, ModInt& x){ long long value; if (is >> value) x = ModInt(value); return is; }
 };
-using fastmint = MontgomeryModInt<998244353>;
-using fastamint = MontgomeryModInt<1000000007>;
+template<int MOD> using BasicModInt = ModInt<MOD,false>;
+template<int MOD> using MontgomeryModInt = ModInt<MOD,true>;
+using mint = ModInt<998244353>;
+using amint = ModInt<1000000007>;
+using fastmint = mint;
+using fastamint = amint;
+
 
 namespace convolution_detail {
 template<class T, int PrimitiveRoot>
@@ -231,47 +223,18 @@ vector<T> square(vector<T> a){
 }
 } // namespace convolution_detail
 
-template<int MOD, int PrimitiveRoot = 3>
-void ntt(vector<ModInt<MOD>>& a, bool inverse){ convolution_detail::ntt<ModInt<MOD>,PrimitiveRoot>(a, inverse); }
-template<int MOD, int PrimitiveRoot = 3>
-void ntt(vector<MontgomeryModInt<MOD>>& a, bool inverse){ convolution_detail::ntt<MontgomeryModInt<MOD>,PrimitiveRoot>(a, inverse); }
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+void ntt(vector<ModInt<MOD,Fast>>& a, bool inverse){ convolution_detail::ntt<ModInt<MOD,Fast>,PrimitiveRoot>(a, inverse); }
 
-template<int MOD, int PrimitiveRoot = 3>
-vector<MontgomeryModInt<MOD>> convolution(vector<MontgomeryModInt<MOD>> a, vector<MontgomeryModInt<MOD>> b){
-    return convolution_detail::convolution<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a), move(b));
-}
-template<int MOD, int PrimitiveRoot = 3>
-vector<ModInt<MOD>> convolution(vector<ModInt<MOD>> a, vector<ModInt<MOD>> b){
-    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
-        if (min(a.size(), b.size()) > 32){
-            vector<MontgomeryModInt<MOD>> x(a.size()), y(b.size());
-            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
-            for (int i = 0; i < (int)b.size(); ++i) y[i] = MontgomeryModInt<MOD>::raw(b[i].val());
-            auto z = convolution<MOD,PrimitiveRoot>(move(x), move(y));
-            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
-            return a;
-        }
-    }
-    return convolution_detail::convolution<ModInt<MOD>,PrimitiveRoot>(move(a), move(b));
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+vector<ModInt<MOD,Fast>> convolution(vector<ModInt<MOD,Fast>> a, vector<ModInt<MOD,Fast>> b){
+    return convolution_detail::convolution<ModInt<MOD,Fast>,PrimitiveRoot>(move(a), move(b));
 }
 
 // Reuses the forward transform: two NTTs instead of three for a*a.
-template<int MOD, int PrimitiveRoot = 3>
-vector<MontgomeryModInt<MOD>> convolution_square(vector<MontgomeryModInt<MOD>> a){
-    return convolution_detail::square<MontgomeryModInt<MOD>,PrimitiveRoot>(move(a));
-}
-template<int MOD, int PrimitiveRoot = 3>
-vector<ModInt<MOD>> convolution_square(vector<ModInt<MOD>> a){
-    if constexpr (MOD > 1 && MOD < (1 << 30) && (MOD & 1)){
-        if (a.size() > 32){
-            vector<MontgomeryModInt<MOD>> x(a.size());
-            for (int i = 0; i < (int)a.size(); ++i) x[i] = MontgomeryModInt<MOD>::raw(a[i].val());
-            auto z = convolution_square<MOD,PrimitiveRoot>(move(x));
-            a.resize(z.size()); for (int i = 0; i < (int)z.size(); ++i) a[i] = z[i].val();
-            return a;
-        }
-    }
-    return convolution_detail::square<ModInt<MOD>,PrimitiveRoot>(move(a));
+template<int MOD, int PrimitiveRoot = 3, bool Fast = (MOD > 1 && MOD < (1 << 30) && (MOD & 1))>
+vector<ModInt<MOD,Fast>> convolution_square(vector<ModInt<MOD,Fast>> a){
+    return convolution_detail::square<ModInt<MOD,Fast>,PrimitiveRoot>(move(a));
 }
 
 
@@ -290,11 +253,11 @@ inline size_t output_size(size_t n, size_t m){
     return n + m - 1;
 }
 template<int MOD> vector<int> residue_convolution(const vector<long long>& a, const vector<long long>& b){
-    vector<MontgomeryModInt<MOD>> x(a.size()), z;
+    vector<ModInt<MOD>> x(a.size()), z;
     for (size_t i = 0; i < a.size(); ++i) x[i] = a[i];
     if (&a == &b) z = ::convolution_square<MOD, MOD == P3 ? 11 : 3>(move(x));
     else {
-        vector<MontgomeryModInt<MOD>> y(b.size());
+        vector<ModInt<MOD>> y(b.size());
         for (size_t i = 0; i < b.size(); ++i) y[i] = b[i];
         z = ::convolution<MOD, MOD == P3 ? 11 : 3>(move(x), move(y));
     }
